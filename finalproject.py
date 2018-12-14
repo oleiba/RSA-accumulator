@@ -1,22 +1,19 @@
 import secrets
-from helpfunctions import generateTwoLargeSafePrimes
+import hashlib
+from helpfunctions import generateTwoLargeSafePrimes, hashToPrime
 
-def hashToPrime(x,lambdaCoefecient):
-    #
-    prime = -1
-    return prime
+KEY_SIZE = 3072  # RSA key size (2 field elements) for 128 bits of security 
 
-def setup(keysize=3072):
+def setup():
     # draw strong primes p,q
-    p,q  = generateTwoLargeSafePrimes(keysize)
+    p,q  = generateTwoLargeSafePrimes(int(KEY_SIZE / 2))
     n = p*q
     # draw random number within range of [0,n-1]
     A0 = secrets.randbelow(n)
     return n, A0
 
-
-def addElement(Ai,x,n,lambdaCoefecient):
-    power = hashToPrime(x,lambdaCoefecient)
+def addElement(Ai,x,n,):
+    power = hashToPrime(x, int(KEY_SIZE / 2))
     result = pow(Ai,power,n)
     return result
 

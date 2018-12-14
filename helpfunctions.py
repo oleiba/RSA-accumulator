@@ -2,6 +2,7 @@
 # http://inventwithpython.com/hacking (BSD Licensed)
 
 import random
+import hashlib
 
 
 def rabinMiller(num):
@@ -54,18 +55,17 @@ def isPrime(num):
     return rabinMiller(num)
 
 
-def generateLargePrime(keysize=1024):
-    # Return a random prime number of keysize bits in size.
+def generateLargePrime(numOfbits=1536):
     while True:
-        num = random.randrange(2**(keysize-1), 2**(keysize))
+        num = random.randrange(2**(numOfbits-1), 2**(numOfbits))
         if isPrime(num):
             return num
 
 
-def generateTwoLargeSafePrimes(keysize):
+def generateTwoLargeSafePrimes(numOfbits=1536):
     p = -1 , q = -1
     while True:
-        prime = generateLargePrime(keysize)
+        prime = generateLargePrime(numOfbits)
         candidate = prime * 2 + 1
         if isPrime(candidate):
             if p == -1:
@@ -74,5 +74,18 @@ def generateTwoLargeSafePrimes(keysize):
                 q = candidate
         if (p!= -1 and q!=-1):
             return p,q
+
+def hashToPrime(x, numOfbits=1536, i=0):
+    while True:
+        num = hashToLength(str(x) + str(i), numOfbits)
+        if isPrime(num):
+            return num, i
+        i = i +1
+
+def hashToLength(x, numOfbits=1536):
+    pseudo_random_hex_string = ""
+    for i in range(0, int(numOfbits / 512)):
+        pseudo_random_hex_string += hashlib.sha512((str(x) + str(i)).encode()).hexdigest()
+    return int(pseudo_random_hex_string, 16)
 
 
