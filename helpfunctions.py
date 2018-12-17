@@ -97,5 +97,3 @@ def hashToLength(x, num_of_bits=1536):
     for i in range(0, int(num_of_bits / 512)):
         pseudo_random_hex_string += hashlib.sha512((str(x) + str(i)).encode()).hexdigest()
     return int(pseudo_random_hex_string, 16)
-
-

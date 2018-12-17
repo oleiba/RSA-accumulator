@@ -7,7 +7,6 @@ FE_SIZE = int(KEY_SIZE / 2)
 
 
 def setup():
-    print("in setup")
     # draw strong primes p,q
     p, q = generateTwoLargeDistinctPrimes(int(FE_SIZE/2))
     n = p*q
@@ -52,6 +51,3 @@ def delete_element(A0, A, S, x, n):
 
 def verify(A, x, nonce, proof, n):
     return pow(proof, hashToPrime(x=x, nonce=nonce)[0], n) == A
-
-
-
