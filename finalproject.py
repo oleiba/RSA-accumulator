@@ -1,6 +1,6 @@
 import secrets
 import hashlib
-from helpfunctions import generateTwoLargeSafePrimes, hashToPrime
+from helpfunctions import generateTwoLargeSafePrimes, hashToPrime, mul_inv
 
 KEY_SIZE = 3072  # RSA key size (2 field elements) for 128 bits of security 
 
@@ -18,7 +18,9 @@ def addElement(Ai,x,n,):
     return result
 
 def deleteElement(Ai, x, n):
-    result = -1
+    hash = hashToPrime(x)
+    inverse = mul_inv(hash,n)
+    result = pow(Ai, inverse, n)
     return result
 
 def verify(A,x,proof,n):
