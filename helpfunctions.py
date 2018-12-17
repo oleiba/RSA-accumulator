@@ -3,20 +3,7 @@
 
 import random
 import hashlib
-
-
-def xgcd(b, a):
-    x0, x1, y0, y1 = 1, 0, 0, 1
-    while a != 0:
-        q, b, a = b // a, a, b % a
-        x0, x1 = x1, x0 - q * x1
-        y0, y1 = y1, y0 - q * y1
-    return  b, x0, y0
-
-def mul_inv(b, n):
-    g, x, _ = xgcd(b, n)
-    if g == 1:
-        return x % n
+import secrets
 
 
 def rabinMiller(num):
@@ -69,36 +56,45 @@ def isPrime(num):
     return rabinMiller(num)
 
 
-def generateLargePrime(numOfbits=1536):
+def generateLargePrime(num_of_bits=1536):
     while True:
-        num = random.randrange(2**(numOfbits-1), 2**(numOfbits))
+        num = secrets.randbelow(pow(2, num_of_bits))
         if isPrime(num):
             return num
 
 
-def generateTwoLargeSafePrimes(numOfbits=1536):
-    p = -1 , q = -1
+def generateTwoLargeSafePrimes(num_of_bits=1536):
+    p = -1
+    q = -1
     while True:
-        prime = generateLargePrime(numOfbits)
+        prime = generateLargePrime(int(num_of_bits / 2))
         candidate = prime * 2 + 1
         if isPrime(candidate):
             if p == -1:
                 p = candidate
             elif q == -1:
                 q = candidate
-        if (p!= -1 and q!=-1):
-            return p,q
+        if p != -1 and q != -1:
+            return p, q
 
-def hashToPrime(x, numOfbits=1536, i=0):
+
+def generateTwoLargeDistinctPrimes(num_of_bits=1536):
+    p = generateLargePrime(int(num_of_bits / 2))
     while True:
-        num = hashToLength(str(x) + str(i), numOfbits)
-        if isPrime(num):
-            return num, i
-        i = i +1
+        q = generateLargePrime(int(num_of_bits / 2))
+        while q != p:
+            return p, q
 
-def hashToLength(x, numOfbits=1536):
+def hashToPrime(x, num_of_bits=1536, nonce=0):
+    while True:
+        num = hashToLength(str(x) + str(nonce), num_of_bits)
+        if isPrime(num):
+            return num, nonce
+        nonce = nonce + 1
+
+def hashToLength(x, num_of_bits=1536):
     pseudo_random_hex_string = ""
-    for i in range(0, int(numOfbits / 512)):
+    for i in range(0, int(num_of_bits / 512)):
         pseudo_random_hex_string += hashlib.sha512((str(x) + str(i)).encode()).hexdigest()
     return int(pseudo_random_hex_string, 16)
 
