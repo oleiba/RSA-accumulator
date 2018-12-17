@@ -5,6 +5,20 @@ import random
 import hashlib
 
 
+def xgcd(b, a):
+    x0, x1, y0, y1 = 1, 0, 0, 1
+    while a != 0:
+        q, b, a = b // a, a, b % a
+        x0, x1 = x1, x0 - q * x1
+        y0, y1 = y1, y0 - q * y1
+    return  b, x0, y0
+
+def mul_inv(b, n):
+    g, x, _ = xgcd(b, n)
+    if g == 1:
+        return x % n
+
+
 def rabinMiller(num):
     # Returns True if num is a prime number.
 
