@@ -78,10 +78,10 @@ def generateTwoLargeSafePrimes(num_of_bits=1536):
             return p, q
 
 
-def generateTwoLargeDistinctPrimes(num_of_bits=1536):
-    p = generateLargePrime(int(num_of_bits / 2))
+def generateTwoLargeDistinctPrimes(num_of_bits):
+    p = generateLargePrime(num_of_bits)
     while True:
-        q = generateLargePrime(int(num_of_bits / 2))
+        q = generateLargePrime(num_of_bits)
         while q != p:
             return p, q
 
