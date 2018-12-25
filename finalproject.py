@@ -3,7 +3,8 @@ import secrets
 from helpfunctions import generateTwoLargeDistinctPrimes, hashToPrime
 
 KEY_SIZE = 3072  # RSA key size (2 field elements) for 128 bits of security
-FE_SIZE = int(KEY_SIZE / 2)
+# FE_SIZE = int(KEY_SIZE / 2)
+FE_SIZE = 256
 
 
 def setup():
@@ -50,4 +51,4 @@ def delete_element(A0, A, S, x, n):
 
 
 def verify(A, x, nonce, proof, n):
-    return pow(proof, hashToPrime(x=x, nonce=nonce)[0], n) == A
+    return pow(proof, hashToPrime(x=x, num_of_bits = FE_SIZE, nonce=nonce)[0], n) == A

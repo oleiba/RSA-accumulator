@@ -94,6 +94,6 @@ def hashToPrime(x, num_of_bits=1536, nonce=0):
 
 def hashToLength(x, num_of_bits=1536):
     pseudo_random_hex_string = ""
-    for i in range(0, int(num_of_bits / 512)):
-        pseudo_random_hex_string += hashlib.sha512((str(x) + str(i)).encode()).hexdigest()
+    for i in range(0, int(num_of_bits / 256)):
+        pseudo_random_hex_string += hashlib.sha256((str(x) + str(i)).encode()).hexdigest()
     return int(pseudo_random_hex_string, 16)
