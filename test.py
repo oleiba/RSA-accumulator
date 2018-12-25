@@ -1,14 +1,22 @@
 import secrets
+import math
+from helpfunctions import hash_to_prime, is_prime
 from finalproject import setup, add_element, prove_membership, delete_element, verify
 from unittest import TestCase
 
 
 class AccumulatorTest(TestCase):
+        def test_hash_to_prime(self):
+                x = secrets.randbelow(pow(2, 256))
+                h, nonce = hash_to_prime(x, 128)
+                self.assertTrue(is_prime(h))
+                self.assertTrue(h, math.log2(h) < 128)
+
         def test_add_element(self):
                 n, A0, S = setup()
 
-                x0 = secrets.randbelow(pow(2,256))
-                x1 = secrets.randbelow(pow(2,256))
+                x0 = secrets.randbelow(pow(2, 256))
+                x1 = secrets.randbelow(pow(2, 256))
 
                 # first addition
                 A1 = add_element(A0, S, x0, n)
