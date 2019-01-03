@@ -13,11 +13,13 @@ def createGraph(sizes,acuLst,merkleLst):
     plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
     plt.show()
 
+
 def testAccumulator(xLst):
     n, A0, S = setup()
     A = A0
     for x in xLst:
         A = add_element(A, S, x, n)
+
 
 def testMerkle(xLst):
     t = Tree()
@@ -77,8 +79,6 @@ def testRuntime(sizes):
         # merkleEvidenceLst.append(totalMerkle)
 
     createGraph(sizes, acuLst, merkleLst)
-
-
 
 
 sizes = [2,4,8,16,32,64,128,256,512,1024,2048,4096]
