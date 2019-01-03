@@ -5,6 +5,6 @@ Cryptographic accumulator based on the strong RSA assumption, Python &amp; Solid
 
 Python3
 
-## Testing
+### Testing
 
 `python3 -m unittest test`
