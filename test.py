@@ -2,7 +2,7 @@ import secrets
 import math
 from helpfunctions import hash_to_prime, is_prime, generate_large_prime
 from finalproject import setup, add_element, prove_membership, delete_element, verify, \
-        prove_proof_of_exponentiation, verify_proof_of_exponentiation
+        prove_membership_with_PoE, verify_exponentiation
 from unittest import TestCase
 import time
 
@@ -50,17 +50,10 @@ class AccumulatorTest(TestCase):
                 # first, do regular accumulation
                 n, A0, S = setup()
                 x0 = secrets.randbelow(pow(2, 256))
+                x1 = secrets.randbelow(pow(2, 256))
                 A1 = add_element(A0, S, x0, n)
-                nonce = S[x0]
-                prime_element = hash_to_prime(x=x0, nonce=nonce)[0]
+                A2 = add_element(A1, S, x1, n)
 
-                start = time.time()
-                Q, r, l_nonce = prove_proof_of_exponentiation(A0, prime_element, A1, n)
-                end = time.time()
-                print('proof = ', str(end - start))
-                start = time.time()
-                is_valid = verify_proof_of_exponentiation(Q, l_nonce, A0, r, A1, n)
-                end = time.time()
-                print('verify = ', str(end - start))
+                Q, l_nonce, u = prove_membership_with_PoE(A0, S, x0, n, A2)
+                is_valid = verify_exponentiation(Q, l_nonce, u, x0, S[x0], A2, n)
                 self.assertTrue(is_valid)
-

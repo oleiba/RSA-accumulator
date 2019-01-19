@@ -1,22 +1,67 @@
 import time
 import secrets
 
-from finalproject import setup, add_element, prove_membership, delete_element, verify
+from helpfunctions import hash_to_prime
+from finalproject import setup, add_element, prove_membership, delete_element, verify, prove_membership_with_PoE, verify_exponentiation
+
 
 def create_set(size):
     set = []
     for i in range(size):
-        set.append(secrets.randbelow(pow(2, 128)))
+        x = secrets.randbelow(pow(2, 256))
+        set.append(x)
     return set
 
-set = create_set(1000)
-n, A, S = setup()
+
+set = create_set(100)
+n, A_0, S = setup()
 
 time_adds = 0
 start = time.time()
-for i in range(1000):
-    A = add_element(A, S, set[i], n)
+A_N = A_0
+for i in range(len(set)):
+    A_N = add_element(A_N, S, set[i], n)
 end = time.time()
-time_adds = end - start
+total_time = end - start
+print("Total time add =", total_time)
+print("Add average:=", total_time / len(set))
 
-print("total =", time_adds)
+set_of_proofs_1 =  []
+start = time.time()
+for i in range(len(set)):
+    set_of_proofs_1.append(prove_membership(A_0, S, set[i], n))
+end = time.time()
+total_time = end - start
+print("Total time prove =", total_time)
+print("Prove average =", total_time / len(set))
+
+set_of_proofs_2 = []
+start = time.time()
+for i in range(len(set)):
+    set_of_proofs_2.append(prove_membership_with_PoE(A_0, S, set[i], n, A_N))
+end = time.time()
+total_time = end - start
+print("Total time prove with PoE =", total_time)
+print("Prove average =", total_time / len(set))
+
+
+start = time.time()
+for i in range(len(set)):
+    if not verify(A_N, set[i], S[set[i]], set_of_proofs_1[i], n):
+        print("ERROR")
+end = time.time()
+total_time = end - start
+print("Total time basic verify =", total_time)
+print("Basic verify average=", total_time / len(set))
+
+start = time.time()
+for i in range(len(set)):
+    if not verify_exponentiation(set_of_proofs_2[i][0], set_of_proofs_2[i][1], set_of_proofs_2[i][2], set[i], S[set[i]], A_N, n):
+        print("ERROR")
+end = time.time()
+total_time = end - start
+print("Total time basic verify =", total_time)
+print("PoE verify average=", total_time / len(set))
+
+print("-------------")
+

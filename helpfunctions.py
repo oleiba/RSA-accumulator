@@ -104,3 +104,10 @@ def mul_inv(b, n):
     g, x, _ = xgcd(b, n)
     if g == 1:
         return x % n
+
+
+def concat(*arg):
+    res = ""
+    for i in range(len(arg)):
+        res += str(arg[i])
+    return int(res)
