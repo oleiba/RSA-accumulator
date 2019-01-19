@@ -29,7 +29,6 @@ const ACCUMULATOR_PROOF_RESULT_PATH = path.join(__dirname, './acc-gas-results.js
 
 async function testMerkleProofGas (setSizes) {
     let compiledContract = await compileContract([MERKLE_PROOF_CONTRACT_PATH])
-    console.log('testMerkleProofGas.pid =', process.pid)
     let contractObj = new web3.eth.Contract(compiledContract.abi)
     try {
         // deploy contract
@@ -38,40 +37,42 @@ async function testMerkleProofGas (setSizes) {
         const contractAddress = receipt.contractAddress
 
         await executeMerkleProofEstimations(setSizes, contractObj, contractAddress)
-        console.log('Done - Merkle proof gas.')
     } catch (e) {
         console.error(e)
     }
 }
 
 function testAccumulatorGas () {
-    const pythonProcess = spawn('python3',["generate-proof.py"])
-    pythonProcess.stdout.on('data', async (data) => {
-        // Do something with the data returned from python script
-        const returnValues = data.toString().split(',')
-            .map(s => s.replace(/^\s+|\s+$/g, ''))  // remove line breaks if any
-        const modulus = returnValues[0]
-        const accumulatorPre = returnValues[1]
-        const element = returnValues[2]
-        const accumulatorPost = returnValues[3]
-        let compiledContract = await compileContract([ACCUMULATOR_CONTRACT_PATH, BYTES_LIB_CONTRACT_PATH])
-        let contractObj = new web3.eth.Contract(compiledContract.abi)
-        try {
-            // deploy contract
-            var deployObj = {
-                data: '0x' + compiledContract.bytecode,
-                arguments: [modulus, accumulatorPost]
-            }
-            const deploy = contractObj.deploy(deployObj)
-            let receipt = await sendTransaction(deploy)
-            const contractAddress = receipt.contractAddress
+    return new Promise((resolve, reject) => {
+        const pythonProcess = spawn('python3',["generate-proof.py"])
+        pythonProcess.stdout.on('data', async (data) => {
+            // Do something with the data returned from python script
+            const returnValues = data.toString().split(',')
+                .map(s => s.replace(/^\s+|\s+$/g, ''))  // remove line breaks if any
+            const modulus = returnValues[0]
+            const accumulatorPre = returnValues[1]
+            const element = returnValues[2]
+            const accumulatorPost = returnValues[3]
+            let compiledContract = await compileContract([ACCUMULATOR_CONTRACT_PATH, BYTES_LIB_CONTRACT_PATH])
+            let contractObj = new web3.eth.Contract(compiledContract.abi)
+            try {
+                // deploy contract
+                var deployObj = {
+                    data: '0x' + compiledContract.bytecode,
+                    arguments: [modulus, accumulatorPost]
+                }
+                const deploy = contractObj.deploy(deployObj)
+                let receipt = await sendTransaction(deploy)
+                const contractAddress = receipt.contractAddress
 
-            executeAccumulatorEstimation(accumulatorPre, element, contractObj, contractAddress)
-            console.log('Done - RSA accumulator gas.')
-        } catch (e) {
-            console.error(e)
-        }
-    });
+                await executeAccumulatorEstimation(accumulatorPre, element, contractObj, contractAddress)
+                resolve()
+            } catch (e) {
+                console.error(e)
+                reject(e)
+            }
+        })
+    })
 }
 
 async function executeMerkleProofEstimations (setSizes,  contractObj, contractAddress) {
@@ -186,8 +187,10 @@ for (let i = 0; i < 21; i++) {
 }
 
 async function start() {
-    //await testMerkleProofGas(setSizes)
-    testAccumulatorGas()
+    await testMerkleProofGas(setSizes)
+    console.log('Done - Merkle proof gas, written result to', MERKLE_PROOF_RESULTS_PATH)
+    await testAccumulatorGas()
+    console.log('Done - RSA accumulator gas, written result to', ACCUMULATOR_PROOF_RESULT_PATH)
 }
 
 start()
