@@ -1,3 +1,6 @@
 .idea/
 acc-gas-results.json
 merkle-gas-results.json
+__pycache__/finalproject.cpython-37.pyc
+__pycache__/helpfunctions.cpython-37.pyc
+__pycache__/test.cpython-37.pyc
