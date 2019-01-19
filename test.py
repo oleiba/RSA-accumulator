@@ -1,8 +1,10 @@
 import secrets
 import math
-from helpfunctions import hash_to_prime, is_prime
-from finalproject import setup, add_element, prove_membership, delete_element, verify
+from helpfunctions import hash_to_prime, is_prime, generate_large_prime
+from finalproject import setup, add_element, prove_membership, delete_element, verify, \
+        prove_proof_of_exponentiation, verify_proof_of_exponentiation
 from unittest import TestCase
+import time
 
 
 class AccumulatorTest(TestCase):
@@ -25,7 +27,7 @@ class AccumulatorTest(TestCase):
                 proof = prove_membership(A0, S, x0, n)
                 self.assertEqual(len(S), 1)
                 self.assertEqual(A0, proof)
-                self.assertEqual(verify(A1, x0, nonce, proof, n), True)
+                self.assertTrue(verify(A1, x0, nonce, proof, n))
 
                 # second addition
                 A2 = add_element(A1, S, x1, n)
@@ -34,7 +36,7 @@ class AccumulatorTest(TestCase):
                 proof = prove_membership(A0, S, x1, n)
                 self.assertEqual(len(S), 2)
                 self.assertEqual(A1, proof)
-                self.assertEqual(verify(A2, x1, nonce, proof, n), True)
+                self.assertTrue(verify(A2, x1, nonce, proof, n))
 
                 # delete
                 A1_new = delete_element(A0, A2, S, x0, n)
@@ -42,4 +44,23 @@ class AccumulatorTest(TestCase):
                 proof_none = prove_membership(A0, S, x0, n)
                 self.assertEqual(len(S), 1)
                 self.assertEqual(proof_none, None)
-                self.assertEqual(verify(A1_new, x1, nonce, proof, n), True)
+                self.assertTrue(verify(A1_new, x1, nonce, proof, n))
+
+        def test_proof_of_exponent(self):
+                # first, do regular accumulation
+                n, A0, S = setup()
+                x0 = secrets.randbelow(pow(2, 256))
+                A1 = add_element(A0, S, x0, n)
+                nonce = S[x0]
+                prime_element = hash_to_prime(x=x0, nonce=nonce)[0]
+
+                start = time.time()
+                Q, r, l_nonce = prove_proof_of_exponentiation(A0, prime_element, A1, n)
+                end = time.time()
+                print('proof = ', str(end - start))
+                start = time.time()
+                is_valid = verify_proof_of_exponentiation(Q, l_nonce, A0, r, A1, n)
+                end = time.time()
+                print('verify = ', str(end - start))
+                self.assertTrue(is_valid)
+

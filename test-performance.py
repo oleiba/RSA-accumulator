@@ -5,6 +5,7 @@ from finalproject import setup, add_element, prove_membership, delete_element, v
 # https://hippiehug.readthedocs.io/en/latest/
 from hippiehug import Tree
 
+
 def createGraph(sizes,acuLst,merkleLst):
     plt.plot(sizes, acuLst, label='accumulator')  # plotting t, a separately
     plt.plot(sizes, merkleLst, label='merkle')  # plotting t, b separately
