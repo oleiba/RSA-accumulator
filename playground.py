@@ -2,7 +2,7 @@ import time
 import secrets
 
 from helpfunctions import hash_to_prime
-from finalproject import setup, add_element, prove_membership, delete_element, verify, prove_membership_with_PoE, verify_exponentiation
+from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, prove_membership_with_PoE, verify_exponentiation
 
 
 def create_set(size):
@@ -47,12 +47,12 @@ print("Prove average =", total_time / len(set))
 
 start = time.time()
 for i in range(len(set)):
-    if not verify(A_N, set[i], S[set[i]], set_of_proofs_1[i], n):
+    if not verify_membership(A_N, set[i], S[set[i]], set_of_proofs_1[i], n):
         print("ERROR")
 end = time.time()
 total_time = end - start
-print("Total time basic verify =", total_time)
-print("Basic verify average=", total_time / len(set))
+print("Total time basic verify membership =", total_time)
+print("Basic verify membership average=", total_time / len(set))
 
 start = time.time()
 for i in range(len(set)):
@@ -60,7 +60,7 @@ for i in range(len(set)):
         print("ERROR")
 end = time.time()
 total_time = end - start
-print("Total time basic verify =", total_time)
+print("Total time basic verify membership =", total_time)
 print("PoE verify average=", total_time / len(set))
 
 print("-------------")

@@ -1,7 +1,7 @@
 import secrets
 import math
 from helpfunctions import hash_to_prime, is_prime, generate_large_prime
-from finalproject import setup, add_element, prove_membership, delete_element, verify, \
+from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements
 from unittest import TestCase
@@ -34,7 +34,7 @@ class AccumulatorTest(TestCase):
                 proof = prove_membership(A0, S, x0, n)
                 self.assertEqual(len(S), 1)
                 self.assertEqual(A0, proof)
-                self.assertTrue(verify(A1, x0, nonce, proof, n))
+                self.assertTrue(verify_membership(A1, x0, nonce, proof, n))
 
                 # second addition
                 A2 = add_element(A1, S, x1, n)
@@ -43,7 +43,7 @@ class AccumulatorTest(TestCase):
                 proof = prove_membership(A0, S, x1, n)
                 self.assertEqual(len(S), 2)
                 self.assertEqual(A1, proof)
-                self.assertTrue(verify(A2, x1, nonce, proof, n))
+                self.assertTrue(verify_membership(A2, x1, nonce, proof, n))
 
                 # delete
                 A1_new = delete_element(A0, A2, S, x0, n)
@@ -51,7 +51,7 @@ class AccumulatorTest(TestCase):
                 proof_none = prove_membership(A0, S, x0, n)
                 self.assertEqual(len(S), 1)
                 self.assertEqual(proof_none, None)
-                self.assertTrue(verify(A1_new, x1, nonce, proof, n))
+                self.assertTrue(verify_membership(A1_new, x1, nonce, proof, n))
 
         def test_add_elements(self):
                 n, A0, S = setup()
@@ -79,10 +79,6 @@ class AccumulatorTest(TestCase):
                 Aadd4 = add_element(Aadd3, S, x4, n)
 
                 self.assertEqual(Aadd4, Abacth)
-
-
-
-
 
         def test_proof_of_exponent(self):
                 # first, do regular accumulation

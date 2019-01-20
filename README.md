@@ -24,7 +24,7 @@ $ npm install
 $ node test-gas.js
 ```
 
-[1] https://github.com/gdanezis/rousseau-chain/tree/master/hippiehug-package/hippiehug <br> 
+[1] https://github.com/Tierion/pymerkletools <br> 
 [2] https://github.com/ameensol/merkle-tree-solidity
 
 

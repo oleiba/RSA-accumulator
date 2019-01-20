@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import time
 import matplotlib.pyplot as plt
-from finalproject import setup, add_element, prove_membership, delete_element, verify,add_elements
+from finalproject import setup, add_element, prove_membership, delete_element, verify_membership,add_elements
 from operator import truediv
 
 # https://github.com/Tierion/pymerkletools
@@ -122,7 +122,7 @@ def testRuntime(sizes):
         tik = time.time()
         for index in range(0,evidenceIterations):
             (element, proof) = acuEvidenceLst[index]
-            result = verify(A, element, S[element], proof, n)
+            result = verify_membership(A, element, S[element], proof, n)
         tok = time.time()
         acuVerifyTimingLst.append(tok-tik)
 
@@ -130,7 +130,7 @@ def testRuntime(sizes):
         tik = time.time()
         for index in range (0,evidenceIterations):
             element = merkleEvidenceLst[index]
-            (evidence, leaf) = element
+            (evidence, root) = element
             proof = merkleTree.validate_proof(evidence, leaf, merkleTree.get_merkle_root())
         tok = time.time()
         merkleVerifyTimingLst.append(tok-tik)
