@@ -3,7 +3,7 @@ from functools import reduce
 
 from helpfunctions import concat, generate_two_large_distinct_primes, hash_to_prime
 
-RSA_KEY_SIZE = 3072  # RSA key size for 128 bits of security (modulu size)
+RSA_KEY_SIZE = 2048  # RSA key size for 128 bits of security (modulu size)
 RSA_PRIME_SIZE = int(RSA_KEY_SIZE / 2)
 ACCUMULATED_PRIME_SIZE = 128  # taken from: LLX, "Universal accumulators with efficient nonmembership proofs", construction 1
 
@@ -26,6 +26,15 @@ def add_element(A, S, x, n):
         S[x] = nonce
         return A
 
+def add_elements(A, S, xLst, n):
+    aggHashToPrime = 1
+    for x in xLst:
+        if x not in S.keys():
+            hash_prime, nonce = hash_to_prime(x, ACCUMULATED_PRIME_SIZE)
+            S[x] = nonce
+            aggHashToPrime*=hash_prime
+    A = pow(A, aggHashToPrime, n)
+    return A
 
 def prove_membership(A0, S, x, n):
     if x not in S.keys():

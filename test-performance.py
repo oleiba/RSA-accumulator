@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import time
 import matplotlib.pyplot as plt
-from finalproject import setup, add_element, prove_membership, delete_element, verify
+from finalproject import setup, add_element, prove_membership, delete_element, verify,add_elements
 from operator import truediv
 
 # https://github.com/Tierion/pymerkletools
@@ -62,6 +62,7 @@ def testRuntime(sizes):
     acuVerifyTimingLst = []
     merkleVerifyTimingLst = []
     normalizeIterationsLst = []
+    acuLstBatchTiming = []
     elements = createRandomSet(sizes[-1])
 
     # initialize merkle ds
@@ -83,6 +84,11 @@ def testRuntime(sizes):
         tok = time.time()
         acuLstTiming.append(tok-tik)
 
+        # Batch Add - Acumulatur
+        tik = time.time()
+        A = add_elements(A, S, randomElements, n)
+        tok = time.time()
+        acuLstBatchTiming.append(tok - tik)
 
         # Add - Merkle Tree
         tik = time.time()
@@ -130,12 +136,13 @@ def testRuntime(sizes):
         merkleVerifyTimingLst.append(tok-tik)
         print(size)
 
-    return sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst
+    return sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst,acuLstBatchTiming
     # createGraph(sizes, acuLst, merkleLst, acuEvidenceLst,merkleEvidenceLst)
 
 
 sizes = [16,32,64,128,256,512,1024]
-sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst = testRuntime(sizes)
+sizes = [16,32,64,128,256,512]
+sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst,acuLstBatchTiming = testRuntime(sizes)
 fdiv1 = [float(ai)/bi for ai,bi in zip(acuEvidenceTimingLst,sizes)]
 fdiv2 = [float(ai)/bi for ai,bi in zip(merkleEvidenceTimingLst,sizes)]
 fdiv3 = [float(ai)/bi for ai,bi in zip(acuVerifyTimingLst, normalizeIterationsLst)]
@@ -145,6 +152,7 @@ print (sizes)
 print ("Initializing Data Structure")
 print (acuLstTiming)
 print (merkleLstTiming)
+print(acuLstBatchTiming)
 print ("Create a Single Evidence")
 print(fdiv1)
 print(fdiv2)
@@ -155,10 +163,11 @@ print ("Verify a Single Evidence")
 print(fdiv3)
 print(fdiv4)
 
-# createGraph(sizes, acuLstTiming, merkleLstTiming,"Initializing Data Structure")
-# createGraph(sizes, fdiv1,fdiv2,"Create a Single Evidence")
-# createGraph(sizes, acuEvidenceTimingLst,merkleEvidenceTimingLst,"Create Evidences")
-# createGraph(sizes, fdiv3,fdiv4,"Verify a Single Evidence")
+createGraph(sizes, acuLstTiming, merkleLstTiming,"Initializing Data Structure")
+createGraph(sizes, acuLstBatchTiming, merkleLstTiming,"Initializing Data Structure (with Batch)")
+createGraph(sizes, fdiv1,fdiv2,"Create a Single Evidence")
+createGraph(sizes, acuEvidenceTimingLst,merkleEvidenceTimingLst,"Create Evidences")
+createGraph(sizes, fdiv3,fdiv4,"Verify a Single Evidence")
 
 
 

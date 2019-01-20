@@ -3,7 +3,7 @@ import math
 from helpfunctions import hash_to_prime, is_prime, generate_large_prime
 from finalproject import setup, add_element, prove_membership, delete_element, verify, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
-        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE
+        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements
 from unittest import TestCase
 import time
 
@@ -52,6 +52,37 @@ class AccumulatorTest(TestCase):
                 self.assertEqual(len(S), 1)
                 self.assertEqual(proof_none, None)
                 self.assertTrue(verify(A1_new, x1, nonce, proof, n))
+
+        def test_add_elements(self):
+                n, A0, S = setup()
+
+                x0 = secrets.randbelow(pow(2, 256))
+                x1 = secrets.randbelow(pow(2, 256))
+                x2 = secrets.randbelow(pow(2, 256))
+                x3 = secrets.randbelow(pow(2, 256))
+                x4 = secrets.randbelow(pow(2, 256))
+
+                # first addition
+                Abacth = add_elements(A0, S, [x0,x1,x2,x3,x4], n)
+                A = Abacth
+                Adel0 = delete_element(A0, A, S, x0, n)
+                Adel1 = delete_element(A0, Adel0, S, x1, n)
+                Adel2 = delete_element(A0, Adel1, S, x2, n)
+                Adel3 = delete_element(A0, Adel2, S, x3, n)
+                Adel4 = delete_element(A0, Adel3, S, x4, n)
+                self.assertEqual(A0, Adel4)
+
+                Aadd0 = add_element(Adel4, S, x0, n)
+                Aadd1 = add_element(Aadd0, S, x1, n)
+                Aadd2 = add_element(Aadd1, S, x2, n)
+                Aadd3 = add_element(Aadd2, S, x3, n)
+                Aadd4 = add_element(Aadd3, S, x4, n)
+
+                self.assertEqual(Aadd4, Abacth)
+
+
+
+
 
         def test_proof_of_exponent(self):
                 # first, do regular accumulation
