@@ -48,7 +48,7 @@ def test_runtime(sizes ):
 
         # add to the Merkle tree
         for i in range(len(set)):
-            merkleTree.add_leaf(str(i))
+            merkleTree.add_leaf(str(i), True)
         merkleTree.make_tree()
 
         # prove membership Merkle tree
@@ -60,20 +60,20 @@ def test_runtime(sizes ):
         merkle_proof_timing.append(tok - tik)
 
         # basic prove membership
-        basic_proofs = []
-        tik = time.time()
-        for x in set:
-            basic_proofs.append(prove_membership(A0, S, x, n))
-        tok = time.time()
-        prove_timing.append(tok - tik)
+        # basic_proofs = []
+        # tik = time.time()
+        # for x in set:
+        #     basic_proofs.append(prove_membership(A0, S, x, n))
+        # tok = time.time()
+        # prove_timing.append(tok - tik)
 
         # prove membership with NIPoE
-        niope_proofs = []
-        tik = time.time()
-        for x in set:
-            niope_proofs.append(prove_membership_with_NIPoE(A0, S, x, n, Anew))
-        tok = time.time()
-        prove_with_NIPoE_timing.append(tok - tik)
+        # niope_proofs = []
+        # tik = time.time()
+        # for x in set:
+        #     niope_proofs.append(prove_membership_with_NIPoE(A0, S, x, n, Anew))
+        # tok = time.time()
+        # prove_with_NIPoE_timing.append(tok - tik)
 
         # batch prove membership
         tik = time.time()
@@ -100,18 +100,18 @@ def test_runtime(sizes ):
         merkle_verify_timing.append(tok - tik)
 
         # basic verify membership
-        tik = time.time()
-        for proof in basic_proofs:
-            b = verify_membership(Anew, x, S[x], proof, n)
-        tok = time.time()
-        verify_timing.append(tok - tik)
+        # tik = time.time()
+        # for proof in basic_proofs:
+        #     b = verify_membership(Anew, x, S[x], proof, n)
+        # tok = time.time()
+        # verify_timing.append(tok - tik)
 
         # verify membership with NIPoE
-        tik = time.time()
-        for proof in niope_proofs:
-            b = verify_exponentiation(proof[0], proof[1], proof[2], x, S[x], Anew, n)
-        tok = time.time()
-        verify_with_NIPoE_timing.append(tok - tik)
+        # tik = time.time()
+        # for proof in niope_proofs:
+        #     b = verify_exponentiation(proof[0], proof[1], proof[2], x, S[x], Anew, n)
+        # tok = time.time()
+        # verify_with_NIPoE_timing.append(tok - tik)
 
         # batch verify membership
         nonces_list = list(S.values())
@@ -127,25 +127,28 @@ def test_runtime(sizes ):
         tok = time.time()
         batch_verify_with_NIPoE_timing.append(tok - tik)
 
-
-sizes = [1, 16, 32, 64, 128, 256,512]
+sizes = []
+for i in range(14):
+    sizes.append(pow(2, i))
 test_runtime(sizes)
 fdiv1 = [float(ai)/bi for ai, bi in zip(merkle_proof_timing, sizes)]
-fdiv2 = [float(ai)/bi for ai, bi in zip(prove_timing, sizes)]
-fdiv3 = [float(ai)/bi for ai, bi in zip(prove_with_NIPoE_timing, sizes)]
+# fdiv2 = [float(ai)/bi for ai, bi in zip(prove_timing, sizes)]
+# fdiv3 = [float(ai)/bi for ai, bi in zip(prove_with_NIPoE_timing, sizes)]
 fdiv4 = [float(ai)/bi for ai, bi in zip(batch_prove_timing, sizes)]
 fdiv5 = [float(ai)/bi for ai, bi in zip(batch_prove_with_NIPoE_timing, sizes)]
 fdiv6 = [float(ai)/bi for ai, bi in zip(merkle_verify_timing, sizes)]
-fdiv7 = [float(ai)/bi for ai, bi in zip(verify_timing, sizes)]
-fdiv8 = [float(ai)/bi for ai, bi in zip(verify_with_NIPoE_timing, sizes)]
+# fdiv7 = [float(ai)/bi for ai, bi in zip(verify_timing, sizes)]
+# fdiv8 = [float(ai)/bi for ai, bi in zip(verify_with_NIPoE_timing, sizes)]
 fdiv9 = [float(ai)/bi for ai, bi in zip(batch_verify_timing, sizes)]
 fdiv10 = [float(ai)/bi for ai, bi in zip(batch_verify_with_NIPoE_timing, sizes)]
 
-print("prove_timing = ", prove_timing)
-print("prove_with_NIPoE_timing = ", prove_with_NIPoE_timing)
+print("merkle_proof_timing = ", merkle_proof_timing)
+# print("prove_timing = ", prove_timing)
+# print("prove_with_NIPoE_timing = ", prove_with_NIPoE_timing)
 print("batch_prove_timing = ", batch_prove_timing)
 print("batch_prove_with_NIPoE_timing = ", batch_prove_with_NIPoE_timing)
-print("verify_timing = ", verify_timing)
-print("verify_with_NIPoE_timing = ", verify_with_NIPoE_timing)
+print("merkle_verify_timing = ", merkle_verify_timing)
+# print("verify_timing = ", verify_timing)
+# print("verify_with_NIPoE_timing = ", verify_with_NIPoE_timing)
 print("batch_verify_timing = ", batch_verify_timing)
 print("batch_verify_with_NIPoE_timing = ", batch_verify_with_NIPoE_timing)
