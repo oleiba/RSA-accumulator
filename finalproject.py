@@ -52,6 +52,36 @@ def prove_membership(A0, S, x, n):
         return A
 
 
+def prove_non_membership(A0, S, x, x_nonce, n):
+    if x in S.keys():
+        return None
+    else:
+        product = 1
+        for element in S.keys():
+            nonce = S[element]
+            product *= hash_to_prime(element, ACCUMULATED_PRIME_SIZE, nonce)[0]
+    prime = hash_to_prime(x, ACCUMULATED_PRIME_SIZE, x_nonce)[0]
+    a, b = bezoute_coefficients(prime, product)
+    if a < 0:
+        positive_a = -a
+        inverse_A0 = mul_inv(A0, n)
+        d = pow(inverse_A0, positive_a, n)
+    else:
+        d = pow(A0, a, n)
+    return d, b
+
+
+def verify_non_membership(A0, A_final, d, b, x, x_nonce, n):
+    prime = hash_to_prime(x, ACCUMULATED_PRIME_SIZE, x_nonce)[0]
+    if b < 0:
+        positive_b = -b
+        inverse_A_final = mul_inv(A_final, n)
+        second_power = pow(inverse_A_final, positive_b, n)
+    else:
+        second_power = pow(A_final, b, n)
+    return (pow(d, prime, n) * second_power) % n == A0
+
+
 def batch_prove_membership(A0, S, x_list, n):
     product = 1
     for element in S.keys():

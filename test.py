@@ -3,7 +3,8 @@ import math
 from helpfunctions import hash_to_prime, is_prime, shamir_trick
 from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
-        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements
+        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements, \
+        prove_non_membership, verify_non_membership
 from unittest import TestCase
 
 def create_list(size):
@@ -159,4 +160,22 @@ class AccumulatorTest(TestCase):
                 agg_proof = shamir_trick(prime0, proof0, prime1, proof1, n)
 
                 is_valid = pow(agg_proof, prime0 * prime1, n) == A2
+                self.assertTrue(is_valid)
+
+        def test_prove_non_membership(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(3)
+
+                A1 = add_element(A0, S, elements_list[0], n)
+                A2 = add_element(A1, S, elements_list[1], n)
+                A3 = add_element(A2, S, elements_list[2], n)
+
+                proof = prove_non_membership(A0, S, elements_list[0], S[elements_list[0]], n)
+                self.assertIsNone(proof)
+
+                x = create_list(1)[0]
+                prime, x_nonce = hash_to_prime(x)
+                proof = prove_non_membership(A0, S, x, x_nonce, n)
+                is_valid = verify_non_membership(A0, A3, proof[0], proof[1], x, x_nonce, n)
                 self.assertTrue(is_valid)
