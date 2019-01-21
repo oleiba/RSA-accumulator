@@ -1,7 +1,8 @@
 import secrets
 from functools import reduce
 
-from helpfunctions import concat, generate_two_large_distinct_primes, hash_to_prime
+from helpfunctions import concat, generate_two_large_distinct_primes, hash_to_prime, bezoute_coefficients,\
+    mul_inv
 
 RSA_KEY_SIZE = 3072  # RSA key size for 128 bits of security (modulu size)
 RSA_PRIME_SIZE = int(RSA_KEY_SIZE / 2)

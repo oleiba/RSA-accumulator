@@ -111,3 +111,28 @@ def concat(*arg):
     for i in range(len(arg)):
         res += str(arg[i])
     return int(res)
+
+
+def bezoute_coefficients(a, b):
+    o = xgcd(a, b)
+    return o[1], o[2]
+
+
+def shamir_trick(x1, pi1, x2, pi2, n):
+    # we omit the validity check of (x1^pi1 == x2^pi2) for performance reasons, assume caller validates
+
+    # find a,b s.t. a*x + b*y = 1 (mod n)
+    a, b = bezoute_coefficients(x1, x2)
+    negative_is_a = a < 0
+    if negative_is_a:
+        positive_a = -a
+        inverse_pi2 = mul_inv(pi2, n)
+        power1 = pow(pi1, b, n)
+        power2 = pow(inverse_pi2, positive_a, n)
+    else:
+        positive_b = -b
+        inverse_pi1 = mul_inv(pi1, n)
+        power1 = pow(inverse_pi1, positive_b, n)
+        power2 = pow(pi2, a, n)
+    pi = power1 * power2
+    return pi

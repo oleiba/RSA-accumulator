@@ -1,11 +1,10 @@
 import secrets
 import math
-from helpfunctions import hash_to_prime, is_prime, generate_large_prime
+from helpfunctions import hash_to_prime, is_prime, shamir_trick
 from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements
 from unittest import TestCase
-import time
 
 def create_list(size):
         res = []
@@ -122,4 +121,42 @@ class AccumulatorTest(TestCase):
                 Q, l_nonce, u = batch_prove_membership_with_NIPoE(A0, S, elements_to_prove_list, n, A_final)
                 nonces_list = list(map(lambda e: hash_to_prime(e)[1], elements_to_prove_list))
                 is_valid = batch_verify_membership_with_NIPoE(Q, l_nonce, u, elements_to_prove_list, nonces_list, A_final, n)
+                self.assertTrue(is_valid)
+
+        def test_shamir_trick_1(self):
+                n = 23
+                A0 = 2
+
+                prime0 = 3
+                prime1 = 5
+
+                A1 = pow(A0, prime0, n)
+                A2 = pow(A1, prime1, n)
+
+                proof0 = pow(A0, prime1, n)
+                proof1 = pow(A0, prime0, n)
+
+                agg_proof = shamir_trick(prime0, proof0, prime1, proof1, n)
+                power = pow(agg_proof, prime0 * prime1, n)
+
+                is_valid = power == A2
+                self.assertTrue(is_valid)
+
+        def test_shamir_trick_2(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(2)
+
+                A1 = add_element(A0, S, elements_list[0], n)
+                A2 = add_element(A1, S, elements_list[1], n)
+
+                prime0 = hash_to_prime(elements_list[0], nonce=S[elements_list[0]])[0]
+                prime1 = hash_to_prime(elements_list[1], nonce=S[elements_list[1]])[0]
+
+                proof0 = prove_membership(A0, S, elements_list[0], n)
+                proof1 = prove_membership(A0, S, elements_list[1], n)
+
+                agg_proof = shamir_trick(prime0, proof0, prime1, proof1, n)
+
+                is_valid = pow(agg_proof, prime0 * prime1, n) == A2
                 self.assertTrue(is_valid)
