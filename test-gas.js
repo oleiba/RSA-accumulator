@@ -21,11 +21,11 @@ const from = ethereumJs.privateToAddress(privateKey).toString('hex')
 web3.setProvider(new Web3.providers.WebsocketProvider(web3Povider))
 
 const MERKLE_PROOF_CONTRACT_PATH = path.join(__dirname, 'contracts/MerkleProof.sol')
-const MERKLE_PROOF_RESULTS_PATH = path.join(__dirname, './merkle-gas-results.json')
+const MERKLE_PROOF_RESULTS_PATH = path.join(__dirname, 'generated/merkle-gas-results.json')
 
 const ACCUMULATOR_CONTRACT_PATH = path.join(__dirname, 'contracts/RSAAccumulator.sol')
 const BYTES_LIB_CONTRACT_PATH = path.join(__dirname, 'contracts/BytesLib.sol')
-const ACCUMULATOR_PROOF_RESULT_PATH = path.join(__dirname, './acc-gas-results.json')
+const ACCUMULATOR_PROOF_RESULT_PATH = path.join(__dirname, 'generated/acc-gas-results.json')
 
 async function testMerkleProofGas (setSizes) {
     let compiledContract = await compileContract([MERKLE_PROOF_CONTRACT_PATH])
@@ -191,6 +191,7 @@ async function start() {
     console.log('Done - Merkle proof gas, written result to', MERKLE_PROOF_RESULTS_PATH)
     await testAccumulatorGas()
     console.log('Done - RSA accumulator gas, written result to', ACCUMULATOR_PROOF_RESULT_PATH)
+    return
 }
 
 start()

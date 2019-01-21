@@ -61,18 +61,19 @@ def batch_prove_membership(A0, S, x_list, n):
     return A
 
 
+# AggMemWit (without Shamir trick, currently)
+def batch_prove_membership_with_NIPoE(A0, S, x_list, n, w):
+    u = batch_prove_membership(A0, S, x_list, n)
+    primes_list = list(map(lambda x: hash_to_prime(x=x, nonce=S[x])[0], x_list))
+    product = reduce(lambda first, second: first * second, primes_list, 1)
+    (Q, l_nonce) = prove_exponentiation(u, product, w, n)
+    return Q, l_nonce, u
+
+
 def prove_membership_with_NIPoE(g, S, x, n, w):
     u = prove_membership(g, S, x, n)
     x_prime, x_nonce = hash_to_prime(x=x, nonce=S[x])
     (Q, l_nonce) = prove_exponentiation(u, x_prime, w, n)
-    return Q, l_nonce, u
-
-
-def batch_prove_membership_with_NIPoE(A0, S, x_list, n, w):
-    u = batch_prove_membership(A0, S, x_list, n)
-    primes_list = list(map(lambda x: hash_to_prime(x)[0], x_list))
-    product = reduce(lambda first, second: first * second, primes_list, 1)
-    (Q, l_nonce) = prove_exponentiation(u, product, w, n)
     return Q, l_nonce, u
 
 
