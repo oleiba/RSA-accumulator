@@ -2,7 +2,7 @@ import time
 import secrets
 
 from helpfunctions import hash_to_prime
-from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, prove_membership_with_PoE, verify_exponentiation
+from finalproject import setup, add, prove_membership, delete, verify_membership, prove_membership_with_PoE, verify_exponentiation
 
 
 def create_set(size):
@@ -20,7 +20,7 @@ time_adds = 0
 start = time.time()
 A_N = A_0
 for i in range(len(set)):
-    A_N = add_element(A_N, S, set[i], n)
+    A_N = add(A_N, S, set[i], n)
 end = time.time()
 total_time = end - start
 print("Total time add =", total_time)

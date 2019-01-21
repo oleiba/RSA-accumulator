@@ -18,7 +18,7 @@ def setup():
     return n, A0, dict()
 
 
-def add_element(A, S, x, n):
+def add(A, S, x, n):
     if x in S.keys():
         return A
     else:
@@ -28,7 +28,7 @@ def add_element(A, S, x, n):
         return A
 
 
-def add_elements(A, S, xLst, n):
+def batch_add(A, S, xLst, n):
     product = 1
     for x in xLst:
         if x not in S.keys():
@@ -128,23 +128,23 @@ def prove_exponentiation(u, x, w, n):
 # we pass the l_nonce just for speed up. The verifier has to reproduce l himself.
 def verify_exponentiation(Q, l_nonce, u, x, x_nonce, w, n):
     x = hash_to_prime(x=x, nonce=x_nonce)[0]
-    return _verify_exponentiation(Q, l_nonce, u, x, w, n)
+    return __verify_exponentiation(Q, l_nonce, u, x, w, n)
 
 
 def batch_verify_membership_with_NIPoE(Q, l_nonce, u, x_list, x_nonces_list, w, n):
-    product = _calculate_primes_product(x_list, x_nonces_list)
-    return _verify_exponentiation(Q, l_nonce, u, product, w, n)
+    product = __calculate_primes_product(x_list, x_nonces_list)
+    return __verify_exponentiation(Q, l_nonce, u, product, w, n)
 
 
 # helper function, does not do hash_to_prime on x
-def _verify_exponentiation(Q, l_nonce, u, x, w, n):
+def __verify_exponentiation(Q, l_nonce, u, x, w, n):
     l = hash_to_prime(x=(concat(x, u, w)), nonce=l_nonce)[0]
     r = x % l
     # check (Q^l)(u^r) == w
     return (pow(Q, l, n) % n) * (pow(u, r, n) % n) % n == w
 
 
-def delete_element(A0, A, S, x, n):
+def delete(A0, A, S, x, n):
     if x not in S.keys():
         return A
     else:
@@ -157,7 +157,7 @@ def delete_element(A0, A, S, x, n):
         return Anew
 
 
-def delete_elements(A0, A, S, x_list, n):
+def batch_delete(A0, A, S, x_list, n):
     for x in x_list:
         del S[x]
 
@@ -173,15 +173,15 @@ def delete_elements(A0, A, S, x_list, n):
 
 
 def verify_membership(A, x, nonce, proof, n):
-    return _verify_membership(A, hash_to_prime(x=x, num_of_bits=ACCUMULATED_PRIME_SIZE, nonce=nonce)[0], proof, n)
+    return __verify_membership(A, hash_to_prime(x=x, num_of_bits=ACCUMULATED_PRIME_SIZE, nonce=nonce)[0], proof, n)
 
 
 def batch_verify_membership(A, x_list, nonce_list, proof, n):
-    product = _calculate_primes_product(x_list, nonce_list)
-    return _verify_membership(A, product, proof, n)
+    product = __calculate_primes_product(x_list, nonce_list)
+    return __verify_membership(A, product, proof, n)
 
 
-def _calculate_primes_product(x_list, nonce_list):
+def __calculate_primes_product(x_list, nonce_list):
     agg_list = []
     for i in range(len(x_list)):
         agg_list.append([x_list[i], nonce_list[i]])
@@ -191,5 +191,5 @@ def _calculate_primes_product(x_list, nonce_list):
 
 
 # helper function, does not do hash to prime.
-def _verify_membership(A, x, proof, n):
+def __verify_membership(A, x, proof, n):
     return pow(proof, x, n) == A

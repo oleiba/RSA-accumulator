@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import time
 import matplotlib.pyplot as plt
-from finalproject import setup, add_element, prove_membership, delete_element, verify_membership,add_elements
+from finalproject import setup, add, prove_membership, delete, verify_membership,batch_add
 from operator import truediv
 
 # https://github.com/Tierion/pymerkletools
@@ -37,7 +37,7 @@ def testAccumulator(xLst):
     n, A0, S = setup()
     A = A0
     for x in xLst:
-        A = add_element(A, S, x, n)
+        A = add(A, S, x, n)
 
 
 # def testMerkle(xLst):
@@ -80,13 +80,13 @@ def testRuntime(sizes):
         # Add - Acumulatur
         tik = time.time()
         for element in randomElements:
-            A = add_element(A, S, element, n)
+            A = add(A, S, element, n)
         tok = time.time()
         acuLstTiming.append(tok-tik)
 
         # Batch Add - Acumulatur
         tik = time.time()
-        A = add_elements(A, S, randomElements, n)
+        A = batch_add(A, S, randomElements, n)
         tok = time.time()
         acuLstBatchTiming.append(tok - tik)
 

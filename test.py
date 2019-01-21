@@ -1,9 +1,9 @@
 import secrets
 import math
 from helpfunctions import hash_to_prime, is_prime, shamir_trick
-from finalproject import setup, add_element, prove_membership, delete_element, verify_membership, \
+from finalproject import setup, add, prove_membership, delete, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
-        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, add_elements, \
+        batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, batch_add, \
         prove_non_membership, verify_non_membership
 from unittest import TestCase
 
@@ -28,7 +28,7 @@ class AccumulatorTest(TestCase):
                 x1 = secrets.randbelow(pow(2, 256))
 
                 # first addition
-                A1 = add_element(A0, S, x0, n)
+                A1 = add(A0, S, x0, n)
                 nonce = S[x0]
 
                 proof = prove_membership(A0, S, x0, n)
@@ -37,7 +37,7 @@ class AccumulatorTest(TestCase):
                 self.assertTrue(verify_membership(A1, x0, nonce, proof, n))
 
                 # second addition
-                A2 = add_element(A1, S, x1, n)
+                A2 = add(A1, S, x1, n)
                 nonce = S[x1]
 
                 proof = prove_membership(A0, S, x1, n)
@@ -46,14 +46,14 @@ class AccumulatorTest(TestCase):
                 self.assertTrue(verify_membership(A2, x1, nonce, proof, n))
 
                 # delete
-                A1_new = delete_element(A0, A2, S, x0, n)
+                A1_new = delete(A0, A2, S, x0, n)
                 proof = prove_membership(A0, S, x1, n)
                 proof_none = prove_membership(A0, S, x0, n)
                 self.assertEqual(len(S), 1)
                 self.assertEqual(proof_none, None)
                 self.assertTrue(verify_membership(A1_new, x1, nonce, proof, n))
 
-        def test_add_elements(self):
+        def test_batch_add(self):
                 n, A0, S = setup()
 
                 x0 = secrets.randbelow(pow(2, 256))
@@ -63,20 +63,20 @@ class AccumulatorTest(TestCase):
                 x4 = secrets.randbelow(pow(2, 256))
 
                 # first addition
-                Abacth = add_elements(A0, S, [x0,x1,x2,x3,x4], n)
+                Abacth = batch_add(A0, S, [x0,x1,x2,x3,x4], n)
                 A = Abacth
-                Adel0 = delete_element(A0, A, S, x0, n)
-                Adel1 = delete_element(A0, Adel0, S, x1, n)
-                Adel2 = delete_element(A0, Adel1, S, x2, n)
-                Adel3 = delete_element(A0, Adel2, S, x3, n)
-                Adel4 = delete_element(A0, Adel3, S, x4, n)
+                Adel0 = delete(A0, A, S, x0, n)
+                Adel1 = delete(A0, Adel0, S, x1, n)
+                Adel2 = delete(A0, Adel1, S, x2, n)
+                Adel3 = delete(A0, Adel2, S, x3, n)
+                Adel4 = delete(A0, Adel3, S, x4, n)
                 self.assertEqual(A0, Adel4)
 
-                Aadd0 = add_element(Adel4, S, x0, n)
-                Aadd1 = add_element(Aadd0, S, x1, n)
-                Aadd2 = add_element(Aadd1, S, x2, n)
-                Aadd3 = add_element(Aadd2, S, x3, n)
-                Aadd4 = add_element(Aadd3, S, x4, n)
+                Aadd0 = add(Adel4, S, x0, n)
+                Aadd1 = add(Aadd0, S, x1, n)
+                Aadd2 = add(Aadd1, S, x2, n)
+                Aadd3 = add(Aadd2, S, x3, n)
+                Aadd4 = add(Aadd3, S, x4, n)
 
                 self.assertEqual(Aadd4, Abacth)
 
@@ -85,8 +85,8 @@ class AccumulatorTest(TestCase):
                 n, A0, S = setup()
                 x0 = secrets.randbelow(pow(2, 256))
                 x1 = secrets.randbelow(pow(2, 256))
-                A1 = add_element(A0, S, x0, n)
-                A2 = add_element(A1, S, x1, n)
+                A1 = add(A0, S, x0, n)
+                A2 = add(A1, S, x1, n)
 
                 Q, l_nonce, u = prove_membership_with_NIPoE(A0, S, x0, n, A2)
                 is_valid = verify_exponentiation(Q, l_nonce, u, x0, S[x0], A2, n)
@@ -99,7 +99,7 @@ class AccumulatorTest(TestCase):
 
                 A = A0
                 for x in elements_list:
-                        A = add_element(A, S, x, n)
+                        A = add(A, S, x, n)
                 A_final = A
 
                 elements_to_prove_list = [elements_list[4], elements_list[7], elements_list[8]]
@@ -115,7 +115,7 @@ class AccumulatorTest(TestCase):
 
                 A = A0
                 for x in elements_list:
-                        A = add_element(A, S, x, n)
+                        A = add(A, S, x, n)
                 A_final = A
 
                 elements_to_prove_list = [elements_list[4], elements_list[7], elements_list[8]]
@@ -148,8 +148,8 @@ class AccumulatorTest(TestCase):
 
                 elements_list = create_list(2)
 
-                A1 = add_element(A0, S, elements_list[0], n)
-                A2 = add_element(A1, S, elements_list[1], n)
+                A1 = add(A0, S, elements_list[0], n)
+                A2 = add(A1, S, elements_list[1], n)
 
                 prime0 = hash_to_prime(elements_list[0], nonce=S[elements_list[0]])[0]
                 prime1 = hash_to_prime(elements_list[1], nonce=S[elements_list[1]])[0]
@@ -167,9 +167,9 @@ class AccumulatorTest(TestCase):
 
                 elements_list = create_list(3)
 
-                A1 = add_element(A0, S, elements_list[0], n)
-                A2 = add_element(A1, S, elements_list[1], n)
-                A3 = add_element(A2, S, elements_list[2], n)
+                A1 = add(A0, S, elements_list[0], n)
+                A2 = add(A1, S, elements_list[1], n)
+                A3 = add(A2, S, elements_list[2], n)
 
                 proof = prove_non_membership(A0, S, elements_list[0], S[elements_list[0]], n)
                 self.assertIsNone(proof)

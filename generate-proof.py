@@ -1,7 +1,7 @@
 # This file is used to generate a proof for the RSAAccumulator smart contract
 import sys
 import secrets
-from finalproject import setup, add_element, prove_membership
+from finalproject import setup, add, prove_membership
 from helpfunctions import hash_to_prime
 
 
@@ -15,7 +15,7 @@ n, A0, S = setup()
 
 
 x = secrets.randbelow(pow(2, 256))
-A1 = add_element(A0, S, x, n)
+A1 = add(A0, S, x, n)
 nonce = S[x]
 proof = prove_membership(A0, S, x, n)
 prime, nonce = hash_to_prime(x=x, nonce=nonce)

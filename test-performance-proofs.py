@@ -2,7 +2,7 @@ import hashlib
 import secrets
 import time
 import matplotlib.pyplot as plt
-from finalproject import setup, add_elements, prove_membership, prove_membership_with_NIPoE, batch_prove_membership, batch_prove_membership_with_NIPoE, \
+from finalproject import setup, batch_add, prove_membership, prove_membership_with_NIPoE, batch_prove_membership, batch_prove_membership_with_NIPoE, \
     verify_membership, verify_exponentiation, batch_verify_membership, batch_verify_membership_with_NIPoE
 import csv
 import os
@@ -47,7 +47,7 @@ def test_runtime(sizes):
         merkleTree = merkletools.MerkleTools()
 
         # add to the accumulator
-        Anew = add_elements(A0, S, set, n)
+        Anew = batch_add(A0, S, set, n)
 
         # add to the Merkle tree
         for i in range(len(set)):
