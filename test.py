@@ -4,7 +4,7 @@ from helpfunctions import hash_to_prime, is_prime, shamir_trick
 from finalproject import setup, add, prove_membership, delete, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, batch_add, \
-        prove_non_membership, verify_non_membership
+        prove_non_membership, verify_non_membership, batch_delete, batch_delete_using_membership_proofs
 from unittest import TestCase
 
 def create_list(size):
@@ -137,7 +137,7 @@ class AccumulatorTest(TestCase):
                 proof0 = pow(A0, prime1, n)
                 proof1 = pow(A0, prime0, n)
 
-                agg_proof = shamir_trick(prime0, proof0, prime1, proof1, n)
+                agg_proof = shamir_trick(proof0, proof1, prime0, prime1, n)
                 power = pow(agg_proof, prime0 * prime1, n)
 
                 is_valid = power == A2
@@ -157,7 +157,7 @@ class AccumulatorTest(TestCase):
                 proof0 = prove_membership(A0, S, elements_list[0], n)
                 proof1 = prove_membership(A0, S, elements_list[1], n)
 
-                agg_proof = shamir_trick(prime0, proof0, prime1, proof1, n)
+                agg_proof = shamir_trick(proof0, proof1, prime0, prime1, n)
 
                 is_valid = pow(agg_proof, prime0 * prime1, n) == A2
                 self.assertTrue(is_valid)
@@ -178,4 +178,24 @@ class AccumulatorTest(TestCase):
                 prime, x_nonce = hash_to_prime(x)
                 proof = prove_non_membership(A0, S, x, x_nonce, n)
                 is_valid = verify_non_membership(A0, A3, proof[0], proof[1], x, x_nonce, n)
+                self.assertTrue(is_valid)
+
+        def test_batch_delete(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(5)
+
+                A = A0
+                for i in range(len(elements_list)):
+                        A = add(A, S, elements_list[i], n)
+                A_pre_delete = A
+
+                elements_to_delete_list = [elements_list[0], elements_list[2], elements_list[4]]
+                nonces_list = list(map(lambda e: hash_to_prime(e)[1], elements_to_delete_list))
+
+                proofs = list(map(lambda x: prove_membership(A0, S, x, n), elements_to_delete_list))
+
+                A_post_delete, nipoe = batch_delete_using_membership_proofs(A_pre_delete, S, elements_to_delete_list, proofs, n)
+
+                is_valid = batch_verify_membership_with_NIPoE(nipoe[0], nipoe[1], A_post_delete, elements_to_delete_list, nonces_list, A_pre_delete, n)
                 self.assertTrue(is_valid)

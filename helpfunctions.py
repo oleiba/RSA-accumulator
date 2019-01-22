@@ -118,7 +118,7 @@ def bezoute_coefficients(a, b):
     return o[1], o[2]
 
 
-def shamir_trick(x1, pi1, x2, pi2, n):
+def shamir_trick(pi1, pi2, x1, x2, n):
     # we omit the validity check of (x1^pi1 == x2^pi2) for performance reasons, assume caller validates
 
     # find a,b s.t. a*x + b*y = 1 (mod n)

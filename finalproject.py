@@ -2,7 +2,7 @@ import secrets
 from functools import reduce
 
 from helpfunctions import concat, generate_two_large_distinct_primes, hash_to_prime, bezoute_coefficients,\
-    mul_inv
+    mul_inv, shamir_trick
 
 RSA_KEY_SIZE = 3072  # RSA key size for 128 bits of security (modulu size)
 RSA_PRIME_SIZE = int(RSA_KEY_SIZE / 2)
@@ -28,15 +28,15 @@ def add(A, S, x, n):
         return A
 
 
-def batch_add(A, S, xLst, n):
+def batch_add(A0, S, x_list, n):
     product = 1
-    for x in xLst:
+    for x in x_list:
         if x not in S.keys():
             hash_prime, nonce = hash_to_prime(x, ACCUMULATED_PRIME_SIZE)
             S[x] = nonce
             product *= hash_prime
-    A = pow(A, product, n)
-    return A
+    A_new = pow(A0, product, n)
+    return A_new
 
 
 def prove_membership(A0, S, x, n):
@@ -157,19 +157,34 @@ def delete(A0, A, S, x, n):
         return Anew
 
 
-def batch_delete(A0, A, S, x_list, n):
+def batch_delete(A0, S, x_list, n):
     for x in x_list:
         del S[x]
 
     if len(S) == 0:
-        return A
+        return A0
 
-    product = 1
-    for element in S.keys():
-        nonce = S[element]
-        product *= hash_to_prime(element, ACCUMULATED_PRIME_SIZE, nonce)[0]
-    Anew = pow(A0, product, n)
-    return Anew
+    return batch_add(A0, S, x_list, n)
+
+
+def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n):
+    if len(x_list) != len(proofs_list):
+        return None
+
+    primes = []
+    for x in x_list:
+        primes.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
+        del S[x]
+
+    A_post_delete = proofs_list[0]
+    product = primes[0]
+
+    for i in range(len(x_list))[1:]:
+        print("i =", i)
+        A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, primes[i], n)
+        product *= primes[i]
+
+    return A_post_delete, prove_exponentiation(A_post_delete, product, A_pre_delete, n)
 
 
 def verify_membership(A, x, nonce, proof, n):
