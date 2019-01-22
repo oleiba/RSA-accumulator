@@ -166,21 +166,58 @@ def batch_delete(A0, S, x_list, n):
     return batch_add(A0, S, x_list, n)
 
 
-def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n):
-    if len(x_list) != len(proofs_list):
+# def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n):
+#     if len(x_list) != len(proofs_list):
+#         return None
+#
+#     primes = []
+#     for x in x_list:
+#         primes.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
+#         del S[x]
+#
+#     A_post_delete = proofs_list[0]
+#     product = primes[0]
+#
+#     for i in range(len(x_list))[1:]:
+#         A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, primes[i], n)
+#         product *= primes[i]
+#
+#     return A_post_delete, prove_exponentiation(A_post_delete, product, A_pre_delete, n)
+
+
+# agg_list and agg_list_nonces are 2 optional parameters (which must be given together or not at all)
+# which enable the deletion of individual elements using proofs_list in the size of agg_list.
+def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n, agg_list=[], agg_list_nonces=[]):
+    if len(agg_list) != len(agg_list_nonces):
         return None
 
-    primes = []
-    for x in x_list:
-        primes.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
-        del S[x]
+    is_aggregated = len(agg_list) > 0
+
+    if (not is_aggregated) and (len(x_list) != len(proofs_list)):
+        return None
+
+    # we currently support only homogeneous aggregation size
+    if is_aggregated and ((len(x_list) % len(agg_list) != 0) or (len(proofs_list) != len(agg_list))):
+        return None
+
+    raw_elements = []
+    if is_aggregated:
+        agg_size = len(agg_list) // len(agg_list_nonces)
+        for i in range(len(agg_list)):
+            raw_elements.append(agg_list[i])
+            for j in range(agg_size):
+                del S[x_list[agg_size * i + j]]
+    else:
+        for x in x_list:
+            raw_elements.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
+            del S[x]
 
     A_post_delete = proofs_list[0]
-    product = primes[0]
+    product = raw_elements[0]
 
-    for i in range(len(x_list))[1:]:
-        A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, primes[i], n)
-        product *= primes[i]
+    for i in range(len(raw_elements))[1:]:
+        A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, raw_elements[i], n)
+        product *= raw_elements[i]
 
     return A_post_delete, prove_exponentiation(A_post_delete, product, A_pre_delete, n)
 

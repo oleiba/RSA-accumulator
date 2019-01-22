@@ -2,173 +2,273 @@ import hashlib
 import secrets
 import time
 import matplotlib.pyplot as plt
-from finalproject import setup, add, prove_membership, delete, verify_membership,batch_add
-from operator import truediv
+from finalproject import setup, batch_add, prove_membership, prove_membership_with_NIPoE, batch_prove_membership, batch_prove_membership_with_NIPoE, \
+    verify_membership, verify_exponentiation, batch_verify_membership, batch_verify_membership_with_NIPoE, batch_delete_using_membership_proofs
+from helpfunctions import hash_to_prime
+import csv
+import os
+from functools import reduce
+import random
 
 # https://github.com/Tierion/pymerkletools
 import merkletools
 
-# def createTwoGraphs(x1,y1,x2,y2,title,label1,label2):
-#     f, axarr = plt.subplots(2, sharex=True)
-#     f.suptitle(title)
-#     axarr[0].plot(x1, y1, label='accumulator')  # plotting t, a separately
-#     axarr[0].plot(x2, y2, label='merkle')  # plotting t, b separately
-#     axarr[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-#     axarr[0].ylabel('Time(s)')
-#
-#     axarr[0].plot(sizes, acuLst, label='accumulator')  # plotting t, a separately
-#     axarr[0].plot(sizes, merkleLst, label='merkle')  # plotting t, b separately
-#     axarr[0].legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-#     axarr[0].ylabel('Time(s)')
+# add (for all new utxos in block)
+merkle_add_timing = []
+acc_batch_add_genesis_timing = []
+acc_batch_add_per_block_timing = []
+
+# delete (for all spent txos in block)
+acc_delete_timing = []
+acc_batch_delete_timing = []
+
+# prove membership
+merkle_proof_timing = []
+acc_prove_mem_timing = []
+acc_prove_mem_with_NIPoE_timing = []
+acc_batch_prove_mem_timing = []
+acc_batch_prove_mem_with_NIPoE_timing = []
+
+# verify membership per tx
+merkle_verify_mem_per_tx_timing = []
+acc_verify_mem_per_tx_timing = []
+acc_verify_mem_with_NIPoE_per_tx_timing = []
+acc_batch_verify_mem_per_tx_timing = []
+acc_batch_verify_mem_with_NIPoE_per_tx_timing = []
+
+# verify membership per block
+merkle_verify_mem_per_block_timing = []
+acc_verify_mem_per_block_timing = []
+acc_verify_mem_with_NIPoE_per_block_timing = []
+acc_batch_verify_mem_per_block_timing = []
+acc_batch_verify_mem_with_NIPoE_per_block_timing = []
+
+# verify aggregated 2 NI-PoE inclusion proofs after block mining
+acc_batch_verify_two_NIPoE_post_mining = []
 
 
-
-def createGraph(sizes,acuLst,merkleLst,title):
-    plt.title(title)
-    plt.plot(sizes, acuLst, label='accumulator')  # plotting t, a separately
-    plt.plot(sizes, merkleLst, label='merkle')  # plotting t, b separately
-    plt.xlabel('Set Size')
-    plt.ylabel('Time(s)')
-    plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-    plt.show()
+GENERATED_CSV_DIRECTORY = 'generated'
 
 
-def testAccumulator(xLst):
-    n, A0, S = setup()
-    A = A0
-    for x in xLst:
-        A = add(A, S, x, n)
-
-
-# def testMerkle(xLst):
-#     t = Tree()
-#     for x in xLst:
-#         t.add(x)
-
-
-def createRandomSet(size):
+def create_random_list(size):
     result = []
-    for index in range(0,size):
-        random = secrets.randbelow(pow(2, 256))
-        result.append(random)
+    for index in range(0, size):
+        random_element = random.randint(1, pow(2, 256))
+        result.append(random_element)
     return result
 
 
-def testRuntime(sizes):
-    acuLstTiming = []
-    merkleLstTiming = []
-    acuEvidenceTimingLst = []
-    merkleEvidenceTimingLst = []
-    acuVerifyTimingLst = []
-    merkleVerifyTimingLst = []
-    normalizeIterationsLst = []
-    acuLstBatchTiming = []
-    elements = createRandomSet(sizes[-1])
+# Test the performance during block mining process:
+# 1. filling up the sets
+# 2. a client generates an aggregated proof for all the utxos in his tx (we assume a stateful client for accumulator, so we have something to measure)
+# 3. a miner batch-verifies-membership for the aggregated proof for the transaction
+# 4. a miner batch-deletes + generates deletion NI-PoE all the spent utxos in block
+# 5. a miner batch-adds + generates second NI-PoE for all the new utxos in block
+# 6. all nodes batch-verify both proofs from steps 4,5
+#
+#
+def test_mining(total_utxo_set_size_for_merkle_tree, total_utxo_set_size_for_accumulator, num_of_inputs_in_tx, num_of_outputs_in_tx, num_of_txs_in_block):
+    print("----------------------")
+    print("total_utxo_set_size_for_merkle_tree =", total_utxo_set_size_for_merkle_tree)
+    print("total_utxo_set_size_for_accumulator =", total_utxo_set_size_for_accumulator)
+    print("num_of_inputs_in_tx =", num_of_inputs_in_tx)
+    print("num_of_outputs_in_tx =", num_of_outputs_in_tx)
+    print("num_of_txs_in_block =", num_of_txs_in_block)
 
-    # initialize merkle ds
-    for size in sizes:
-        # initialize ds
-        n, A0, S = setup()
-        A = A0
-        merkleTree = merkletools.MerkleTools()
-        randomElements = elements[0:size]
-        acuEvidenceLst = []
-        merkleEvidenceLst = []
-        # print (randomElements)
+    print("--> initialize and fill up Merkle tree state")
+    merkle_tree = merkletools.MerkleTools()
+    elements_for_merkle_tree = create_random_list(total_utxo_set_size_for_merkle_tree)
+    tik = time.time()
+    for i in range(len(elements_for_merkle_tree)):
+        merkle_tree.add_leaf(str(i), True)
+    merkle_tree.make_tree()
+    tok = time.time()
+    merkle_add_timing.append(tok - tik)
+    print("<-- Done.", merkle_add_timing[-1])
 
+    print("--> initialize and fill up accumulator state")
+    n, A0, S = setup()
+    if total_utxo_set_size_for_accumulator < (num_of_inputs_in_tx + num_of_outputs_in_tx) * num_of_txs_in_block:
+        print("please select larger total_utxo_set_size_for_accumulator.")
+        return None
+    elements_for_accumulator = create_random_list(total_utxo_set_size_for_accumulator)
+    inputs_for_accumulator = elements_for_accumulator[0:(num_of_inputs_in_tx * num_of_txs_in_block)]
+    outputs_for_accumulator = create_random_list(num_of_outputs_in_tx * num_of_txs_in_block)
+    tik = time.time()
+    A_post_batch_add, proof = batch_add(A0, S, elements_for_accumulator, n)
+    tok = time.time()
+    acc_batch_add_genesis_timing.append(tok - tik)
+    print("<-- Done.", acc_batch_add_genesis_timing[-1])
 
-        # Add - Acumulatur
+    print("--> prove membership Merkle tree")
+    times = []
+    merkle_proofs = []
+    for i in range(num_of_inputs_in_tx * num_of_txs_in_block):
         tik = time.time()
-        for element in randomElements:
-            A = add(A, S, element, n)
+        merkle_proofs.append(merkle_tree.get_proof(i))
         tok = time.time()
-        acuLstTiming.append(tok-tik)
-
-        # Batch Add - Acumulatur
+        times.append(tok - tik)
+    sum_times = sum(times)
+    merkle_proof_timing.append(sum_times / num_of_inputs_in_tx)  # average per tx
+    print("<-- Done. total:", sum_times, "per tx:", merkle_proof_timing[-1])
+    
+    print("--> prove membership accumulator")
+    times = []
+    acc_mem_proofs = []
+    for i in range(num_of_txs_in_block):
         tik = time.time()
-        A = batch_add(A, S, randomElements, n)
+        inputs_list = []
+        for j in range(num_of_inputs_in_tx):
+            inputs_list.append(inputs_for_accumulator[num_of_inputs_in_tx * i + j])
+        acc_mem_proofs.append(batch_prove_membership(A0, S, inputs_list, n))
         tok = time.time()
-        acuLstBatchTiming.append(tok - tik)
+        times.append(tok - tik)
+    sum_times = sum(times)
+    acc_batch_prove_mem_timing.append(sum_times / len(times))  # average
+    print("<-- Done. total:", sum_times, "per tx:", acc_batch_prove_mem_timing[-1])
 
-        # Add - Merkle Tree
+    print("--> prove membership accumulator with NI-PoE")
+    times = []
+    acc_mem_proofs_with_NIPoE = []
+    for i in range(num_of_txs_in_block):
         tik = time.time()
-        for element in randomElements:
-            # hex_element = hashlib.sha256(element).digest().encode('hex')
-            merkleTree.add_leaf(str(element),True)
-        merkleTree.make_tree()
+        inputs_list = []
+        for j in range(num_of_inputs_in_tx):
+            inputs_list.append(inputs_for_accumulator[num_of_inputs_in_tx * i + j])
+            acc_mem_proofs_with_NIPoE.append(batch_prove_membership_with_NIPoE(A0, S, inputs_list, n, A_post_batch_add))
         tok = time.time()
-        merkleLstTiming.append(tok-tik)
+        times.append(tok - tik)
+    sum_times = sum(times)
+    acc_batch_prove_mem_with_NIPoE_timing.append(sum_times / len(times))  # average
+    print("<-- Done. total:", sum_times, "per tx:", acc_batch_prove_mem_with_NIPoE_timing[-1])
 
-        # Evidence - Accumulator
-        tik = time.time()
-        for element in randomElements:
-            membership = prove_membership(A0, S, element, n)
-            acuEvidenceLst.append((element,membership))
-        tok = time.time()
-        acuEvidenceTimingLst.append(tok-tik)
+    print("--> Merkle tree verify membership")
+    merkle_root = merkle_tree.get_merkle_root()
+    merkle_leaves = []
+    for i in range(num_of_inputs_in_tx * num_of_txs_in_block):
+        merkle_leaves.append(merkle_tree.get_leaf(i))
 
-        # Evidence - Merkle Tree
-        tik= time.time()
-        for element in range(merkleTree.get_leaf_count()):
-            evidence = merkleTree.get_proof(element)
-            leaf = merkleTree.get_leaf(element)
-            merkleEvidenceLst.append((evidence,leaf))
-        tok = time.time()
-        merkleEvidenceTimingLst.append(tok-tik)
+    tik = time.time()
+    for i in range(num_of_txs_in_block):
+        for j in range(num_of_inputs_in_tx):
+            b = merkle_tree.validate_proof(merkle_proofs[i], merkle_leaves[i], merkle_root)
+    tok = time.time()
+    merkle_verify_mem_per_block_timing.append(tok - tik)
+    merkle_verify_mem_per_tx_timing.append((tok - tik) / num_of_txs_in_block)  # average
+    print("<-- Done. total (per block):", merkle_verify_mem_per_block_timing[-1], "per tx:", merkle_verify_mem_per_tx_timing[-1])
 
-        evidenceIterations = min(100,size)
-        normalizeIterationsLst.append(evidenceIterations)
-        # Verify - Accumulator
-        tik = time.time()
-        for index in range(0,evidenceIterations):
-            (element, proof) = acuEvidenceLst[index]
-            result = verify_membership(A, element, S[element], proof, n)
-        tok = time.time()
-        acuVerifyTimingLst.append(tok-tik)
+    print("--> accumulator batch verify membership")
+    tik = time.time()
+    for i in range(num_of_txs_in_block):
+        inputs_list = []
+        for j in range(num_of_inputs_in_tx):
+            inputs_list.append(inputs_for_accumulator[num_of_inputs_in_tx * i + j])
+        # TODO: nonces should be given by the proofs?
+        nonces_list = list(map(lambda x: S[x], inputs_list))
+        b = batch_verify_membership(A_post_batch_add, inputs_list, nonces_list, acc_mem_proofs[i], n)
+    tok = time.time()
+    acc_batch_verify_mem_per_block_timing.append(tok - tik)
+    acc_batch_verify_mem_per_tx_timing.append((tok - tik) / num_of_txs_in_block)  # average
+    print("<-- Done. total (per block):", acc_batch_verify_mem_per_block_timing[-1], "per tx:", acc_batch_verify_mem_per_tx_timing[-1])
 
-        # Verify - Merkle Tree
-        tik = time.time()
-        for index in range (0,evidenceIterations):
-            element = merkleEvidenceLst[index]
-            (evidence, root) = element
-            proof = merkleTree.validate_proof(evidence, leaf, merkleTree.get_merkle_root())
-        tok = time.time()
-        merkleVerifyTimingLst.append(tok-tik)
-        print(size)
+    print("--> accumulator batch verify membership with NIPoE")
+    tik = time.time()
+    for i in range(num_of_txs_in_block):
+        inputs_list = []
+        for j in range(num_of_inputs_in_tx):
+            inputs_list.append(inputs_for_accumulator[num_of_inputs_in_tx * i + j])
+        # TODO: nonces should be given by the proofs?
+        nonces_list = list(map(lambda x: S[x], inputs_list))
+        b = batch_verify_membership_with_NIPoE(
+            acc_mem_proofs_with_NIPoE[i][0],
+            acc_mem_proofs_with_NIPoE[i][1],
+            A0,
+            inputs_list,
+            nonces_list,
+            A_post_batch_add,
+            n)
+    tok = time.time()
+    acc_batch_verify_mem_with_NIPoE_per_block_timing.append(tok - tik)
+    acc_batch_verify_mem_with_NIPoE_per_tx_timing.append((tok - tik) / num_of_txs_in_block)  # average
+    print("<-- Done. total (per block):", acc_batch_verify_mem_with_NIPoE_per_block_timing[-1], "per tx:", acc_batch_verify_mem_with_NIPoE_per_tx_timing[-1])
 
-    return sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst,acuLstBatchTiming
-    # createGraph(sizes, acuLst, merkleLst, acuEvidenceLst,merkleEvidenceLst)
+    print("--> accumulator batch delete spent TXOs + first NI-PoE")
+    tik = time.time()
+    agg_inputs_for_accumulator = []
+    for i in range(num_of_txs_in_block):
+        product = reduce(lambda first, second: first * second, inputs_for_accumulator[(num_of_inputs_in_tx * i): (num_of_inputs_in_tx * (i + 1))], 1)
+        agg_inputs_for_accumulator.append(product)
+    # TODO: can we get the NI-PoE proofs here?
+    nonces_list_for_agg_inputs = list(map(lambda e: hash_to_prime(e)[1], agg_inputs_for_accumulator))
+    A_post_batch_delete, niope1 = batch_delete_using_membership_proofs(A_post_batch_add, S, inputs_for_accumulator, acc_mem_proofs, n, agg_inputs_for_accumulator, nonces_list_for_agg_inputs)
+    tok = time.time()
+    acc_batch_delete_timing.append(tok - tik)
+    print("<-- Done.", acc_batch_delete_timing[-1])
 
+    print("--> accumulator batch add new UTXOs + second NI-PoE")
+    tik = time.time()
+    agg_outputs_for_accumulator = []
+    for i in range(num_of_txs_in_block):
+        product = reduce(lambda first, second: first * second, outputs_for_accumulator[(num_of_outputs_in_tx * i): (num_of_outputs_in_tx * (i + 1))], 1)
+        agg_outputs_for_accumulator.append(product)
+    A_post_batch_add_new, niope2 = batch_add(A_post_batch_delete, S, agg_outputs_for_accumulator, n)
+    nonces_list_for_agg_outputs = list(map(lambda e: hash_to_prime(e)[1], agg_outputs_for_accumulator))
+    tok = time.time()
+    acc_batch_add_per_block_timing.append(tok - tik)
+    print("<-- Done.", acc_batch_add_per_block_timing[-1])
 
-sizes = [16,32,64,128,256,512,1024]
-sizes = [16,32,64,128,256,512]
-sizes, acuLstTiming, merkleLstTiming,acuEvidenceTimingLst,merkleEvidenceTimingLst,acuVerifyTimingLst,merkleVerifyTimingLst,normalizeIterationsLst,acuLstBatchTiming = testRuntime(sizes)
-fdiv1 = [float(ai)/bi for ai,bi in zip(acuEvidenceTimingLst,sizes)]
-fdiv2 = [float(ai)/bi for ai,bi in zip(merkleEvidenceTimingLst,sizes)]
-fdiv3 = [float(ai)/bi for ai,bi in zip(acuVerifyTimingLst, normalizeIterationsLst)]
-fdiv4 = [float(ai)/bi for ai,bi in zip(merkleVerifyTimingLst, normalizeIterationsLst)]
+    print("--> accumulator verify first NI-PoE & second NI-PoE")
+    tik = time.time()
+    b = batch_verify_membership_with_NIPoE(niope1[0], niope1[1], A_post_batch_delete, agg_inputs_for_accumulator, nonces_list_for_agg_inputs, A_post_batch_add, n)
+    print("first proof: ", b)
+    b = batch_verify_membership_with_NIPoE(niope2[0], niope2[1], A_post_batch_delete, agg_outputs_for_accumulator, nonces_list_for_agg_outputs, A_post_batch_add_new, n)
+    print("second proof: ", b)
+    tok = time.time()
+    acc_batch_verify_two_NIPoE_post_mining.append(tok - tik)
+    print("<-- Done.", acc_batch_verify_two_NIPoE_post_mining[-1])
+    
 
-print (sizes)
-print ("Initializing Data Structure")
-print (acuLstTiming)
-print (merkleLstTiming)
-print(acuLstBatchTiming)
-print ("Create a Single Evidence")
-print(fdiv1)
-print(fdiv2)
-print ("Create Evidences")
-print(acuEvidenceTimingLst)
-print(merkleEvidenceTimingLst)
-print ("Verify a Single Evidence")
-print(fdiv3)
-print(fdiv4)
+num_of_txs_in_block = []
+for i in range(5):
+    num_of_txs_in_block.append((i + 1) * 50)
+    test_mining(pow(2, 20), pow(2, 10), 3, 3, num_of_txs_in_block[i])
 
-createGraph(sizes, acuLstTiming, merkleLstTiming,"Initializing Data Structure")
-createGraph(sizes, acuLstBatchTiming, merkleLstTiming,"Initializing Data Structure (with Batch)")
-createGraph(sizes, fdiv1,fdiv2,"Create a Single Evidence")
-createGraph(sizes, acuEvidenceTimingLst,merkleEvidenceTimingLst,"Create Evidences")
-createGraph(sizes, fdiv3,fdiv4,"Verify a Single Evidence")
+num_of_txs_in_block = [''] + num_of_txs_in_block
 
+with open(GENERATED_CSV_DIRECTORY + '/proofs-per-tx.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Merkle Tree'] + merkle_proof_timing)
+    csv_file.writerow(['Accumulator: Aggregate'] + acc_batch_prove_mem_timing)
+    csv_file.writerow(['Accumulator: Aggregate w. NI-PoE'] + acc_batch_prove_mem_with_NIPoE_timing)
 
+with open(GENERATED_CSV_DIRECTORY + '/verifications-per-tx.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Merkle Tree'] + merkle_verify_mem_per_tx_timing)
+    csv_file.writerow(['Accumulator: Batch'] + acc_batch_verify_mem_per_tx_timing)
+    csv_file.writerow(['Accumulator: Batch w. NI-PoE'] + acc_batch_verify_mem_with_NIPoE_per_tx_timing)
 
+with open(GENERATED_CSV_DIRECTORY + '/verifications-per-block.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Merkle Tree'] + merkle_verify_mem_per_block_timing)
+    csv_file.writerow(['Accumulator: Batch'] + acc_batch_verify_mem_per_block_timing)
+    csv_file.writerow(['Accumulator: Batch w. NI-PoE'] + acc_batch_verify_mem_with_NIPoE_per_block_timing)
 
+with open(GENERATED_CSV_DIRECTORY + '/batch-delete-per-block.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Accumulator: Batch Delete'] + acc_batch_delete_timing)
+
+with open(GENERATED_CSV_DIRECTORY + '/batch-add-per-block.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Accumulator: Batch Add'] + acc_batch_add_per_block_timing)
+
+with open(GENERATED_CSV_DIRECTORY + '/batch-verify-aggregated-two-niopes.csv', mode='w') as csv_file:
+    csv_file = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    csv_file.writerow(num_of_txs_in_block)
+    csv_file.writerow(['Accumulator: Verify 2 NIPoEs'] + acc_batch_verify_two_NIPoE_post_mining)
+
+print('Done - written results to ' + os.path.dirname(os.path.abspath(__file__)) + '/' + GENERATED_CSV_DIRECTORY)
