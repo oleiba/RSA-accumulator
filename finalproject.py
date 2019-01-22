@@ -28,15 +28,15 @@ def add(A, S, x, n):
         return A
 
 
-def batch_add(A0, S, x_list, n):
+def batch_add(A_pre_add, S, x_list, n):
     product = 1
     for x in x_list:
         if x not in S.keys():
             hash_prime, nonce = hash_to_prime(x, ACCUMULATED_PRIME_SIZE)
             S[x] = nonce
             product *= hash_prime
-    A_new = pow(A0, product, n)
-    return A_new
+    A_post_add = pow(A_pre_add, product, n)
+    return A_post_add, prove_exponentiation(A_pre_add, product, A_post_add, n)
 
 
 def prove_membership(A0, S, x, n):
@@ -92,7 +92,6 @@ def batch_prove_membership(A0, S, x_list, n):
     return A
 
 
-# AggMemWit (without Shamir trick, currently)
 def batch_prove_membership_with_NIPoE(A0, S, x_list, n, w):
     u = batch_prove_membership(A0, S, x_list, n)
     primes_list = list(map(lambda x: hash_to_prime(x=x, nonce=S[x])[0], x_list))
@@ -180,7 +179,6 @@ def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n
     product = primes[0]
 
     for i in range(len(x_list))[1:]:
-        print("i =", i)
         A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, primes[i], n)
         product *= primes[i]
 

@@ -53,33 +53,6 @@ class AccumulatorTest(TestCase):
                 self.assertEqual(proof_none, None)
                 self.assertTrue(verify_membership(A1_new, x1, nonce, proof, n))
 
-        def test_batch_add(self):
-                n, A0, S = setup()
-
-                x0 = secrets.randbelow(pow(2, 256))
-                x1 = secrets.randbelow(pow(2, 256))
-                x2 = secrets.randbelow(pow(2, 256))
-                x3 = secrets.randbelow(pow(2, 256))
-                x4 = secrets.randbelow(pow(2, 256))
-
-                # first addition
-                Abacth = batch_add(A0, S, [x0,x1,x2,x3,x4], n)
-                A = Abacth
-                Adel0 = delete(A0, A, S, x0, n)
-                Adel1 = delete(A0, Adel0, S, x1, n)
-                Adel2 = delete(A0, Adel1, S, x2, n)
-                Adel3 = delete(A0, Adel2, S, x3, n)
-                Adel4 = delete(A0, Adel3, S, x4, n)
-                self.assertEqual(A0, Adel4)
-
-                Aadd0 = add(Adel4, S, x0, n)
-                Aadd1 = add(Aadd0, S, x1, n)
-                Aadd2 = add(Aadd1, S, x2, n)
-                Aadd3 = add(Aadd2, S, x3, n)
-                Aadd4 = add(Aadd3, S, x4, n)
-
-                self.assertEqual(Aadd4, Abacth)
-
         def test_proof_of_exponent(self):
                 # first, do regular accumulation
                 n, A0, S = setup()
@@ -90,6 +63,18 @@ class AccumulatorTest(TestCase):
 
                 Q, l_nonce, u = prove_membership_with_NIPoE(A0, S, x0, n, A2)
                 is_valid = verify_exponentiation(Q, l_nonce, u, x0, S[x0], A2, n)
+                self.assertTrue(is_valid)
+
+        def test_batch_add(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(10)
+
+                A_post_add, nipoe = batch_add(A0, S, elements_list, n)
+                self.assertEqual(len(S), 10)
+
+                nonces_list = list(map(lambda e: hash_to_prime(e)[1], elements_list))
+                is_valid = batch_verify_membership_with_NIPoE(nipoe[0], nipoe[1], A0, elements_list, nonces_list, A_post_add, n)
                 self.assertTrue(is_valid)
 
         def test_batch_proof_of_membership(self):
