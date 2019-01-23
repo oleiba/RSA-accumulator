@@ -1,7 +1,7 @@
 # This file is used to generate a proof for the RSAAccumulator smart contract
 import sys
 import secrets
-from finalproject import setup, add, prove_membership
+from main import setup, add, prove_membership
 from helpfunctions import hash_to_prime
 
 

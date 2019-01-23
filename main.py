@@ -1,8 +1,7 @@
 import secrets
-from functools import reduce
 
 from helpfunctions import concat, generate_two_large_distinct_primes, hash_to_prime, bezoute_coefficients,\
-    mul_inv, shamir_trick
+    mul_inv, shamir_trick, calculate_product
 
 RSA_KEY_SIZE = 3072  # RSA key size for 128 bits of security (modulu size)
 RSA_PRIME_SIZE = int(RSA_KEY_SIZE / 2)
@@ -94,8 +93,10 @@ def batch_prove_membership(A0, S, x_list, n):
 
 def batch_prove_membership_with_NIPoE(A0, S, x_list, n, w):
     u = batch_prove_membership(A0, S, x_list, n)
-    primes_list = list(map(lambda x: hash_to_prime(x=x, nonce=S[x])[0], x_list))
-    product = reduce(lambda first, second: first * second, primes_list, 1)
+    nonces_list = []
+    for x in x_list:
+        nonces_list.append(S[x])
+    product = __calculate_primes_product(x_list, nonces_list)
     (Q, l_nonce) = prove_exponentiation(u, product, w, n)
     return Q, l_nonce, u
 
@@ -166,58 +167,37 @@ def batch_delete(A0, S, x_list, n):
     return batch_add(A0, S, x_list, n)
 
 
-# def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n):
-#     if len(x_list) != len(proofs_list):
-#         return None
-#
-#     primes = []
-#     for x in x_list:
-#         primes.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
-#         del S[x]
-#
-#     A_post_delete = proofs_list[0]
-#     product = primes[0]
-#
-#     for i in range(len(x_list))[1:]:
-#         A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, primes[i], n)
-#         product *= primes[i]
-#
-#     return A_post_delete, prove_exponentiation(A_post_delete, product, A_pre_delete, n)
-
-
-# agg_list and agg_list_nonces are 2 optional parameters (which must be given together or not at all)
-# which enable the deletion of individual elements using proofs_list in the size of agg_list.
-def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n, agg_list=[], agg_list_nonces=[]):
-    if len(agg_list) != len(agg_list_nonces):
+# agg_indexes: in case proofs_list actually relate to some aggregation of the inputs in x_list, it should contain pairs
+# of start index and end index.
+def batch_delete_using_membership_proofs(A_pre_delete, S, x_list, proofs_list, n, agg_indexes=[]):
+    is_aggregated = len(agg_indexes) > 0
+    if is_aggregated and len(proofs_list) != len(agg_indexes):
         return None
 
-    is_aggregated = len(agg_list) > 0
-
-    if (not is_aggregated) and (len(x_list) != len(proofs_list)):
+    if (not is_aggregated) and len(x_list) != len(proofs_list):
         return None
 
-    # we currently support only homogeneous aggregation size
-    if is_aggregated and ((len(x_list) % len(agg_list) != 0) or (len(proofs_list) != len(agg_list))):
-        return None
-
-    raw_elements = []
+    members = []
     if is_aggregated:
-        agg_size = len(agg_list) // len(agg_list_nonces)
-        for i in range(len(agg_list)):
-            raw_elements.append(agg_list[i])
-            for j in range(agg_size):
-                del S[x_list[agg_size * i + j]]
+        # sanity - verify each and every proof individually
+        for i, indexes in enumerate(agg_indexes):
+            current_x_list = x_list[indexes[0]: indexes[1]]
+            current_nonce_list = [S[x] for x in current_x_list]
+            product = __calculate_primes_product(current_x_list, current_nonce_list)
+            members.append(product)
+            for x in current_x_list:
+                del S[x]
     else:
         for x in x_list:
-            raw_elements.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
+            members.append(hash_to_prime(x, ACCUMULATED_PRIME_SIZE, S[x])[0])
             del S[x]
 
     A_post_delete = proofs_list[0]
-    product = raw_elements[0]
+    product = members[0]
 
-    for i in range(len(raw_elements))[1:]:
-        A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, raw_elements[i], n)
-        product *= raw_elements[i]
+    for i in range(len(members))[1:]:
+        A_post_delete = shamir_trick(A_post_delete, proofs_list[i], product, members[i], n)
+        product *= members[i]
 
     return A_post_delete, prove_exponentiation(A_post_delete, product, A_pre_delete, n)
 
@@ -232,11 +212,11 @@ def batch_verify_membership(A, x_list, nonce_list, proof, n):
 
 
 def __calculate_primes_product(x_list, nonce_list):
-    agg_list = []
-    for i in range(len(x_list)):
-        agg_list.append([x_list[i], nonce_list[i]])
-    primes_list = map(lambda e: hash_to_prime(x=e[0], nonce=e[1])[0],  agg_list)
-    product = reduce(lambda first, second: first * second, primes_list, 1)
+    if len(x_list) != len(nonce_list):
+        return None
+
+    primes_list = [hash_to_prime(x, nonce=nonce_list[i])[0] for i, x in enumerate(x_list)]
+    product = calculate_product(primes_list)
     return product
 
 

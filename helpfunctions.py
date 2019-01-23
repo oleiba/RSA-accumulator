@@ -136,3 +136,11 @@ def shamir_trick(pi1, pi2, x1, x2, n):
         power2 = pow(pi2, a, n)
     pi = power1 * power2
     return pi
+
+
+# This is the fastest method available
+def calculate_product(lst):
+    r = 1
+    for x in lst:
+        r *= x
+    return r

@@ -1,11 +1,12 @@
 import secrets
 import math
 from helpfunctions import hash_to_prime, is_prime, shamir_trick
-from finalproject import setup, add, prove_membership, delete, verify_membership, \
+from main import setup, add, prove_membership, delete, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, batch_add, \
         prove_non_membership, verify_non_membership, batch_delete, batch_delete_using_membership_proofs
 from unittest import TestCase
+
 
 def create_list(size):
         res = []
@@ -13,6 +14,7 @@ def create_list(size):
                 x = secrets.randbelow(pow(2, 256))
                 res.append(x)
         return res
+
 
 class AccumulatorTest(TestCase):
         def test_hash_to_prime(self):
