@@ -14,7 +14,7 @@ Generating and verifying proofs in Python, verifier in Solidity.<br>
 
 ### Benchmarks
 
-* Compare performance (compared with Python Merkle Tree [3]):
+* Compare performance (compared with Python Merkle Tree [1]):
 ```
 $ python3 test-performance.py
 ```
