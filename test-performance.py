@@ -217,7 +217,7 @@ def test_mining(total_utxo_set_size_for_merkle_tree, total_utxo_set_size_for_acc
 
 num_of_txs_in_block = []
 for i in range(5):
-    num_of_txs_in_block.append((i + 1) * 50)
+    num_of_txs_in_block.append((i + 1) * 20)
     test_mining(
         total_utxo_set_size_for_merkle_tree=pow(2, 20),
         total_utxo_set_size_for_accumulator=num_of_txs_in_block[i] * 3,
