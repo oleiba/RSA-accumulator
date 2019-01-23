@@ -11,7 +11,6 @@ setup(name='rsa-accumulator',
       install_requires=[
             'matplotlib',
             'secrets',
-            'hippiehug',
             'merkletools'
       ],
       zip_safe=False)

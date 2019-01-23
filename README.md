@@ -1,4 +1,5 @@
 # RSA-accumulator
+
 Cryptographic accumulator based on the strong RSA assumption [Bd94, BP97, CL02, BBF18].<br>
 Generating and verifying proofs in Python, verifier in Solidity.<br>
 
@@ -38,5 +39,3 @@ schemes without trees](https://link.springer.com/content/pdf/10.1007/3-540-69053
 [CL02] [Dynamic accumulators and application to
 efficient revocation of anonymous credentials](https://link.springer.com/content/pdf/10.1007/3-540-45708-9_5.pdf), Jan Camenisch and Anna Lysyanskaya. <br>
 [BBF18] [Batching Techniques for Accumulators with Applications to IOPs and Stateless Blockchains](https://eprint.iacr.org/2018/1188.pdf), Dan Boneh, Benedikt Bünz, Benjamin Fisch.<br>
-
-
