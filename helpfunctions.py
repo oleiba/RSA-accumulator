@@ -72,7 +72,7 @@ def generate_two_large_distinct_primes(num_of_bits):
             return p, q
 
 
-def hash_to_prime(x, num_of_bits, nonce=0):
+def hash_to_prime(x, num_of_bits=128, nonce=0):
     while True:
         num = hash_to_length(x + nonce, num_of_bits)
         if is_prime(num):
@@ -89,3 +89,58 @@ def hash_to_length(x, num_of_bits):
     if num_of_bits % 256 > 0:
         pseudo_random_hex_string = pseudo_random_hex_string[int((num_of_bits % 256)/4):]  # we do assume divisible by 4
     return int(pseudo_random_hex_string, 16)
+
+
+def xgcd(b, a):
+    x0, x1, y0, y1 = 1, 0, 0, 1
+    while a != 0:
+        q, b, a = b // a, a, b % a
+        x0, x1 = x1, x0 - q * x1
+        y0, y1 = y1, y0 - q * y1
+    return b, x0, y0
+
+
+def mul_inv(b, n):
+    g, x, _ = xgcd(b, n)
+    if g == 1:
+        return x % n
+
+
+def concat(*arg):
+    res = ""
+    for i in range(len(arg)):
+        res += str(arg[i])
+    return int(res)
+
+
+def bezoute_coefficients(a, b):
+    o = xgcd(a, b)
+    return o[1], o[2]
+
+
+def shamir_trick(pi1, pi2, x1, x2, n):
+    # we omit the validity check of (x1^pi1 == x2^pi2) for performance reasons, assume caller validates
+
+    # find a,b s.t. a*x + b*y = 1 (mod n)
+    a, b = bezoute_coefficients(x1, x2)
+    negative_is_a = a < 0
+    if negative_is_a:
+        positive_a = -a
+        inverse_pi2 = mul_inv(pi2, n)
+        power1 = pow(pi1, b, n)
+        power2 = pow(inverse_pi2, positive_a, n)
+    else:
+        positive_b = -b
+        inverse_pi1 = mul_inv(pi1, n)
+        power1 = pow(inverse_pi1, positive_b, n)
+        power2 = pow(pi2, a, n)
+    pi = power1 * power2
+    return pi
+
+
+# This is the fastest method available
+def calculate_product(lst):
+    r = 1
+    for x in lst:
+        r *= x
+    return r
