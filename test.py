@@ -4,7 +4,8 @@ from helpfunctions import hash_to_prime, is_prime, shamir_trick
 from main import setup, add, prove_membership, delete, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, batch_add, \
-        prove_non_membership, verify_non_membership, batch_delete, batch_delete_using_membership_proofs
+        prove_non_membership, verify_non_membership, batch_delete, batch_delete_using_membership_proofs,\
+        create_all_membership_witnesses
 from unittest import TestCase
 
 
@@ -186,3 +187,15 @@ class AccumulatorTest(TestCase):
 
                 is_valid = batch_verify_membership_with_NIPoE(nipoe[0], nipoe[1], A_post_delete, elements_to_delete_list, nonces_list, A_pre_delete, n)
                 self.assertTrue(is_valid)
+
+        def test_create_all_membership_witnesses(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(5)
+
+                A1, nipoe = batch_add(A0, S, elements_list, n)
+                witnesses = create_all_membership_witnesses(A0, S, n)
+
+                elements_list = list(S.keys())  # this specific order is important
+                for i, witness in enumerate(witnesses):
+                        self.assertTrue(verify_membership(A1, elements_list[i], S[elements_list[i]], witness, n))
