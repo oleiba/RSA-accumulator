@@ -248,3 +248,19 @@ def root_factor(g, primes, N):
     R = root_factor(g_R, primes_L, N)
 
     return L + R
+
+
+def aggregate_membership_witnesses(A, witnesses_list, x_list, nonces_list, n):
+    primes = []
+    for i in range(len(x_list)):
+        prime = hash_to_prime(x_list[i], ACCUMULATED_PRIME_SIZE, nonces_list[i])[0]
+        primes.append(prime)
+
+    agg_wit = witnesses_list[0]
+    product = primes[0]
+
+    for i in range(len(x_list))[1:]:
+        agg_wit = shamir_trick(agg_wit, witnesses_list[i], product, primes[i], n)
+        product *= primes[i]
+
+    return agg_wit, prove_exponentiation(agg_wit, product, A, n)

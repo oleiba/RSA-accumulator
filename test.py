@@ -4,8 +4,8 @@ from helpfunctions import hash_to_prime, is_prime, shamir_trick
 from main import setup, add, prove_membership, delete, verify_membership, \
         prove_membership_with_NIPoE, verify_exponentiation, batch_prove_membership, batch_verify_membership, \
         batch_prove_membership_with_NIPoE, batch_verify_membership_with_NIPoE, batch_add, \
-        prove_non_membership, verify_non_membership, batch_delete, batch_delete_using_membership_proofs,\
-        create_all_membership_witnesses
+        prove_non_membership, verify_non_membership, batch_delete_using_membership_proofs,\
+        create_all_membership_witnesses, aggregate_membership_witnesses, calculate_product
 from unittest import TestCase
 
 
@@ -191,7 +191,7 @@ class AccumulatorTest(TestCase):
         def test_create_all_membership_witnesses(self):
                 n, A0, S = setup()
 
-                elements_list = create_list(5)
+                elements_list = create_list(3)
 
                 A1, nipoe = batch_add(A0, S, elements_list, n)
                 witnesses = create_all_membership_witnesses(A0, S, n)
@@ -199,3 +199,21 @@ class AccumulatorTest(TestCase):
                 elements_list = list(S.keys())  # this specific order is important
                 for i, witness in enumerate(witnesses):
                         self.assertTrue(verify_membership(A1, elements_list[i], S[elements_list[i]], witness, n))
+
+        def test_agg_mem_witnesses(self):
+                n, A0, S = setup()
+
+                elements_list = create_list(3)
+
+                A1, nipoe = batch_add(A0, S, elements_list, n)
+                witnesses = create_all_membership_witnesses(A0, S, n)
+
+                elements_list = list(S.keys())  # this specific order is important
+                for i, witness in enumerate(witnesses):
+                        self.assertTrue(verify_membership(A1, elements_list[i], S[elements_list[i]], witness, n))
+
+                nonces_list = [S[x] for x in elements_list]
+                agg_wit, nipoe = aggregate_membership_witnesses(A1, witnesses, elements_list, nonces_list, n)
+
+                is_valid = batch_verify_membership_with_NIPoE(nipoe[0], nipoe[1], agg_wit, elements_list, nonces_list, A1, n)
+                self.assertTrue(is_valid)
