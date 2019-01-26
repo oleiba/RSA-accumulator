@@ -129,10 +129,13 @@ def shamir_trick(pi1, pi2, x1, x2, n):
         inverse_pi2 = mul_inv(pi2, n)
         power1 = pow(pi1, b, n)
         power2 = pow(inverse_pi2, positive_a, n)
-    else:
+    elif b < 0:
         positive_b = -b
         inverse_pi1 = mul_inv(pi1, n)
         power1 = pow(inverse_pi1, positive_b, n)
+        power2 = pow(pi2, a, n)
+    else:
+        power1 = pow(pi1, b, n)
         power2 = pow(pi2, a, n)
     pi = power1 * power2
     return pi

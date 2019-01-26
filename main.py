@@ -223,3 +223,44 @@ def __calculate_primes_product(x_list, nonce_list):
 # helper function, does not do hash to prime.
 def __verify_membership(A, x, proof, n):
     return pow(proof, x, n) == A
+
+
+def create_all_membership_witnesses(A0, S, n):
+    primes = [hash_to_prime(x=x, nonce=S[x])[0] for x in S.keys()]
+    return root_factor(A0, primes, n)
+
+
+def root_factor(g, primes, N):
+    n = len(primes)
+    if n == 1:
+        return [g]
+
+    n_tag = n // 2
+    primes_L = primes[n_tag:n]
+    product_L = calculate_product(primes_L)
+    g_L = pow(g, product_L, N)
+
+    primes_R = primes[0: n_tag]
+    product_R = calculate_product(primes_R)
+    g_R = pow(g, product_R, N)
+
+    L = root_factor(g_L, primes_R, N)
+    R = root_factor(g_R, primes_L, N)
+
+    return L + R
+
+
+def aggregate_membership_witnesses(A, witnesses_list, x_list, nonces_list, n):
+    primes = []
+    for i in range(len(x_list)):
+        prime = hash_to_prime(x_list[i], ACCUMULATED_PRIME_SIZE, nonces_list[i])[0]
+        primes.append(prime)
+
+    agg_wit = witnesses_list[0]
+    product = primes[0]
+
+    for i in range(len(x_list))[1:]:
+        agg_wit = shamir_trick(agg_wit, witnesses_list[i], product, primes[i], n)
+        product *= primes[i]
+
+    return agg_wit, prove_exponentiation(agg_wit, product, A, n)
