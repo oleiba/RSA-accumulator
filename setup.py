@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='rsa-accumulator',
-      version='0.2',
+      version='0.3',
       description='Cryptographic dynamic accumulators based on strong RSA assumption',
       url='https://github.com/oleiba/RSA-accumulator',
       author='Oded Leiba',
